@@ -1,0 +1,17 @@
+[package]
+name = "iij-mpk-net-os"
+version = "0.1.0"
+edition = "2024"
+default-run = "qemu_bios"
+
+[workspace]
+resolver = "3"
+members = ["kernel"]
+
+[build-dependencies]
+bootloader = { version = "0.11.15", features = ["bios"] }
+kernel = { path = "kernel", artifact = "bin", target = "x86_64-unknown-none" }
+
+[workspace.dependencies]
+kernel = { version = "0.1.0", path = "kernel" }
+

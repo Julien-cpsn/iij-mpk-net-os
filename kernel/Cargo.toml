@@ -1,0 +1,22 @@
+[package]
+name = "kernel"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bootloader_api = "0.11.15"
+x86_64 = "0.15.4"
+linked_list_allocator = "0.10.6"
+
+acpi = "5.2.0"
+pic8259 = "0.11.0"
+uart_16550 = "0.6.0"
+virtio-drivers = { version = "0.13.0", path = "../../virtio-drivers" }
+
+spin = { version = "0.12.1", features = ["lazy"] }
+accessor = "0.3.3"
+
+[dependencies.smoltcp]
+version = "0.13.1"
+default-features = false
+features = ["alloc", "log", "medium-ethernet", "proto-ipv4", "socket-raw", "socket-icmp", "socket-udp", "socket-tcp"]
