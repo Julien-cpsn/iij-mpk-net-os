@@ -1,10 +1,9 @@
+use crate::memory::tables::MEMORY_REGIONS;
 use bootloader_api::info::MemoryRegionKind;
 use linked_list_allocator::LockedHeap;
 use spin::Mutex;
+use x86_64::structures::paging::{FrameAllocator, FrameDeallocator, PageSize, PhysFrame};
 use x86_64::PhysAddr;
-use x86_64::structures::paging::{FrameAllocator, FrameDeallocator, PageSize, PhysFrame, Size4KiB};
-use crate::memory::tables::MEMORY_REGIONS;
-use crate::println;
 
 pub static BOOT_INFO_FRAME_ALLOCATOR: Mutex<BootInfoFrameAllocator> = Mutex::new(BootInfoFrameAllocator(0));
 
@@ -23,7 +22,7 @@ unsafe impl<T: PageSize> FrameAllocator<T> for BootInfoFrameAllocator {
 
         let usable_regions = memory_regions
             .iter()
-            .filter(|r| r.kind == MemoryRegionKind::Usable && r.start >= 0x0100_000);
+            .filter(|r| r.kind == MemoryRegionKind::Usable);
 
         // map each region to its address range
         let addr_ranges = usable_regions
@@ -43,45 +42,9 @@ unsafe impl<T: PageSize> FrameAllocator<T> for BootInfoFrameAllocator {
     }
 }
 
-impl FrameDeallocator<Size4KiB> for BootInfoFrameAllocator {
-    unsafe fn deallocate_frame(&mut self, _frame: PhysFrame<Size4KiB>) {
+impl<T: PageSize> FrameDeallocator<T> for BootInfoFrameAllocator {
+    unsafe fn deallocate_frame(&mut self, _frame: PhysFrame<T>) {
 
-    }
-}
-
-impl BootInfoFrameAllocator {
-    pub fn allocate_contiguous(&mut self, pages: usize) -> Option<PhysFrame<Size4KiB>> {
-        let memory_regions = MEMORY_REGIONS.get().unwrap().lock();
-
-        let mut skipped = self.0;
-
-        for region in memory_regions.iter().filter(|r| r.kind == MemoryRegionKind::Usable && r.start >= 0x0100_000) {
-            let region_pages = ((region.end - region.start) / Size4KiB::SIZE) as usize;
-
-            if skipped >= region_pages {
-                skipped -= region_pages;
-                continue;
-            }
-
-            if skipped + pages > region_pages {
-                skipped = 0;
-                continue;
-            }
-
-            let start = region.start + skipped as u64 * Size4KiB::SIZE;
-
-            self.0 += pages;
-
-            println!(
-                "DMA {} pages phys={:#x}",
-                pages,
-                start
-            );
-
-            return Some(PhysFrame::containing_address(PhysAddr::new(start)));
-        }
-
-        None
     }
 }
 

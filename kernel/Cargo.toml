@@ -11,12 +11,13 @@ linked_list_allocator = "0.10.6"
 acpi = "5.2.0"
 pic8259 = "0.11.0"
 uart_16550 = "0.6.0"
-virtio-drivers = { version = "0.13.0", path = "../../virtio-drivers" }
+virtio-drivers = { version = "0.13.0" }
 
 spin = { version = "0.12.1", features = ["lazy"] }
 accessor = "0.3.3"
+byteorder = { version = "1.5.0", default-features = false }
 
 [dependencies.smoltcp]
 version = "0.13.1"
 default-features = false
-features = ["alloc", "log", "medium-ethernet", "proto-ipv4", "socket-raw", "socket-icmp", "socket-udp", "socket-tcp"]
+features = ["alloc", "medium-ethernet", "proto-ipv4", "socket-raw", "socket-icmp", "socket-udp", "socket-tcp"]

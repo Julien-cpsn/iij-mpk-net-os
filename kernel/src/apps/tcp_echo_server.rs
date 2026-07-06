@@ -2,17 +2,19 @@ use alloc::borrow::ToOwned;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::str::FromStr;
+use byteorder::{ByteOrder, NetworkEndian};
 use smoltcp::iface::{Config, Interface, SocketSet};
-use smoltcp::socket::tcp::{Socket, SocketBuffer};
-use smoltcp::wire::{IpAddress, IpCidr, Ipv4Address};
+use smoltcp::phy::Device;
+use smoltcp::socket::{icmp, tcp};
+use smoltcp::wire::{HardwareAddress, Icmpv4Packet, Icmpv4Repr, IpAddress, IpCidr, Ipv4Address};
 use spin::LazyLock;
 use virtio_drivers::transport::Transport;
 use crate::apps::compat::{DeviceImpl, DeviceWrapper};
 use crate::println;
 use crate::utils::time::now;
 
-const IP: LazyLock<IpAddress> = LazyLock::new(|| IpAddress::from_str("10.0.2.15").unwrap());
-const GATEWAY: LazyLock<Ipv4Address> = LazyLock::new(|| Ipv4Address::from_str("10.0.2.2").unwrap());
+const IP: LazyLock<IpAddress> = LazyLock::new(|| IpAddress::from_str("10.0.1.1").unwrap());
+const GATEWAY: LazyLock<Ipv4Address> = LazyLock::new(|| Ipv4Address::from_str("192.168.179.1").unwrap());
 const PORT: u16 = 5555;
 
 
@@ -20,10 +22,11 @@ pub fn tcp_echo_server<T: Transport>(dev: DeviceImpl<T>) {
     let mut device = DeviceWrapper::new(dev);
 
     // Create interface
-    let mut config = Config::new(device.mac_address().into());
+    let mut config = Config::new(HardwareAddress::Ethernet(device.mac_address()));
     config.random_seed = 0x2333;
 
     let mut iface = Interface::new(config, &mut device, now());
+
     iface.update_ip_addrs(|ip_addrs| {
         ip_addrs
             .push(IpCidr::new(*IP, 24))
@@ -35,12 +38,64 @@ pub fn tcp_echo_server<T: Transport>(dev: DeviceImpl<T>) {
         .add_default_ipv4_route(*GATEWAY)
         .unwrap();
 
-    // Create sockets
-    let tcp_rx_buffer = SocketBuffer::new(vec![0; 1024]);
-    let tcp_tx_buffer = SocketBuffer::new(vec![0; 1024]);
-    let tcp_socket = Socket::new(tcp_rx_buffer, tcp_tx_buffer);
-
     let mut sockets = SocketSet::new(vec![]);
+
+    // ICMP
+
+    let icmp_rx_buffer = icmp::PacketBuffer::new(vec![icmp::PacketMetadata::EMPTY], vec![0; 256]);
+    let icmp_tx_buffer = icmp::PacketBuffer::new(vec![icmp::PacketMetadata::EMPTY], vec![0; 256]);
+    let icmp_socket = icmp::Socket::new(icmp_rx_buffer, icmp_tx_buffer);
+    let icmp_handle = sockets.add(icmp_socket);
+
+    let mut can_echo_tcp = false;
+
+    println!("Waiting for PING...");
+
+    while !can_echo_tcp {
+        let timestamp = now();
+        iface.poll(timestamp, &mut device, &mut sockets);
+
+        let icmp_socket = sockets.get_mut::<icmp::Socket>(icmp_handle);
+
+        if !icmp_socket.is_open() {
+            icmp_socket.bind(icmp::Endpoint::Ident(0x22b)).unwrap();
+            continue;
+        }
+
+        if icmp_socket.can_send() {
+            //println!("Can send");
+        }
+
+        if icmp_socket.can_recv() {
+            println!("Can recv");
+
+            let (payload, remote_addr) = icmp_socket.recv().unwrap();
+            let icmp_packet = Icmpv4Packet::new_checked(&payload).unwrap();
+            let icmp_repr = Icmpv4Repr::parse(&icmp_packet, &device.capabilities().checksum).unwrap();
+
+            if let Icmpv4Repr::EchoReply { seq_no, data, .. } = icmp_repr {
+                let packet_timestamp_ms = NetworkEndian::read_i64(data);
+
+                println!(
+                    "{} bytes from {}: icmp_seq={}, time={}ms",
+                    data.len(),
+                    remote_addr,
+                    seq_no,
+                    now().total_millis() - packet_timestamp_ms
+                );
+            }
+        }
+    }
+
+    /*
+    println!("Replied to PING, entering TCP server...");
+
+    // TCP
+
+    let tcp_rx_buffer = tcp::SocketBuffer::new(vec![0; 1024]);
+    let tcp_tx_buffer = tcp::SocketBuffer::new(vec![0; 1024]);
+    let tcp_socket = tcp::Socket::new(tcp_rx_buffer, tcp_tx_buffer);
+
     let tcp_handle = sockets.add(tcp_socket);
 
     println!("Start the echo server...");
@@ -50,7 +105,7 @@ pub fn tcp_echo_server<T: Transport>(dev: DeviceImpl<T>) {
         iface.poll(timestamp, &mut device, &mut sockets);
 
         // tcp:PORT: echo with reverse
-        let socket = sockets.get_mut::<Socket>(tcp_handle);
+        let socket = sockets.get_mut::<tcp::Socket>(tcp_handle);
         if !socket.is_open() {
             println!("Listening on port {}...", PORT);
             socket.listen(PORT).unwrap();
@@ -66,12 +121,11 @@ pub fn tcp_echo_server<T: Transport>(dev: DeviceImpl<T>) {
         tcp_active = socket.is_active();
 
         if socket.may_recv() {
-            let data = socket
-                .recv(|buff| recv(buff))
-                .unwrap();
-            if socket.can_send() && !data.is_empty() {
-                println!("tcp:{} send data: {:?}", PORT, data);
-                socket.send_slice(&data[..]).unwrap();
+            if let Ok(data) = socket.recv(|buff| recv(buff)) {
+                if socket.can_send() && !data.is_empty() {
+                    println!("tcp:{} send data: {:?}", PORT, data);
+                    socket.send_slice(&data[..]).unwrap();
+                }
             }
         }
         else if socket.may_send() {
@@ -79,7 +133,7 @@ pub fn tcp_echo_server<T: Transport>(dev: DeviceImpl<T>) {
             socket.close();
             break;
         }
-    }
+    }*/
 }
 
 fn recv(buffer: &mut [u8]) -> (usize, Vec<u8>) {

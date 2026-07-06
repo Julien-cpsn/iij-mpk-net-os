@@ -323,6 +323,7 @@ dependencies = [
  "accessor",
  "acpi",
  "bootloader_api",
+ "byteorder",
  "linked_list_allocator",
  "pic8259",
  "smoltcp",
@@ -575,7 +576,6 @@ dependencies = [
  "cfg-if",
  "defmt 0.3.100",
  "heapless",
- "log",
  "managed",
 ]
 
@@ -702,6 +702,8 @@ dependencies = [
 [[package]]
 name = "virtio-drivers"
 version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfdc1c628cdd8ce7c3b9e65a8ed550d0338e9ef9f911e729666f1cce097de2f7"
 dependencies = [
  "bitflags 2.13.0",
  "embedded-io",

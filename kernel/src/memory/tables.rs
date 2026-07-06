@@ -3,7 +3,8 @@ use bootloader_api::info::MemoryRegion;
 use spin::{Mutex, Once, RwLock};
 use x86_64::structures::paging::{OffsetPageTable, PageTable};
 use x86_64::{PhysAddr, VirtAddr};
-
+use x86_64::registers::control::Cr3;
+use x86_64::structures::paging::page_table::FrameError;
 
 pub static PHYSICAL_MEMORY_OFFSET: Once<VirtAddr> = Once::new();
 pub static MAPPER: Once<RwLock<OffsetPageTable<'static>>> = Once::new();
@@ -28,8 +29,6 @@ pub fn init(physical_memory_offset: VirtAddr) -> OffsetPageTable<'static> {
 /// `physical_memory_offset`. Also, this function must be only called once
 /// to avoid aliasing `&mut` references (which is undefined behavior).
 fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut PageTable {
-    use x86_64::registers::control::Cr3;
-
     let (level_4_table_frame, _) = Cr3::read();
 
     let phys = level_4_table_frame.start_address();
@@ -56,9 +55,6 @@ pub fn translate_addr(addr: VirtAddr) -> Option<PhysAddr> {
 /// the whole body of unsafe functions as an unsafe block. This function must
 /// only be reachable through `unsafe fn` from outside of this module.
 fn translate_addr_inner(addr: VirtAddr, physical_memory_offset: VirtAddr) -> Option<PhysAddr> {
-    use x86_64::structures::paging::page_table::FrameError;
-    use x86_64::registers::control::Cr3;
-
     // read the active level 4 frame from the CR3 register
     let (level_4_table_frame, _) = Cr3::read();
 

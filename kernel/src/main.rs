@@ -59,21 +59,15 @@ pub fn init(boot_info: &'static mut BootInfo) {
     let memory_regions = boot_info.memory_regions.to_vec();
 
     println!("Memory mapper");
+    println!("\tPhysical offset: {:#X}", physical_memory_offset);
     MAPPER.call_once(|| RwLock::new(memory::tables::init(physical_memory_offset)));
 
     println!("Memory regions:");
-    for r in memory_regions.iter() {
-        println!(
-            "{:?}: {:#x}..{:#x}",
-            r.kind,
-            r.start,
-            r.end
-        );
-    }
-
-    println!("Allocation memory regions");
     MEMORY_REGIONS.call_once(|| Mutex::new(memory_regions));
 
+    for r in MEMORY_REGIONS.get().unwrap().lock().iter() {
+        println!("\t{:?}: {:#x}..{:#x} ({} bytes)", r.kind, r.start, r.end, r.end - r.start);
+    }
 
     println!("ACPI");
     let rsdp = boot_info.rsdp_addr.take().expect("Failed to get RSDP address");
@@ -83,7 +77,7 @@ pub fn init(boot_info: &'static mut BootInfo) {
     init_pic();
 
     println!("Interrupts");
-    x86_64::instructions::interrupts::enable();
+    //x86_64::instructions::interrupts::enable();
 
     println!("Kernel initialized!\n");
 }

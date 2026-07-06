@@ -1,4 +1,4 @@
-use crate::drivers::mmio::MMCONFIG_BASE;
+use crate::drivers::mmio::MMCONFIG_PHYS_BASE;
 use acpi::{AcpiHandler, AcpiTables, PciConfigRegions, PhysicalMapping};
 use core::ptr::NonNull;
 use spin::Once;
@@ -55,5 +55,5 @@ pub fn init_acpi(rsdp: u64, physical_memory_offset: VirtAddr) {
         .next()
         .expect("MCFG contains no regions");
 
-    MMCONFIG_BASE.call_once(|| PhysAddr::new(region.physical_address as u64));
+    MMCONFIG_PHYS_BASE.call_once(|| PhysAddr::new(region.physical_address as u64));
 }
