@@ -5,7 +5,7 @@ use crate::drivers::dma::HalImpl;
 use crate::println;
 
 const NET_BUFFER_LEN: usize = 2048;
-pub const NET_QUEUE_SIZE: usize = 16;
+pub const NET_QUEUE_SIZE: usize = 2;
 
 pub fn init_virtio_net<T: Transport>(transport: T) {
     println!("Initializing virtio-net-pci...");

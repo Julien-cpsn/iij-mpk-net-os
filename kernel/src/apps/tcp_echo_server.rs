@@ -13,7 +13,7 @@ use crate::apps::compat::{DeviceImpl, DeviceWrapper};
 use crate::println;
 use crate::utils::time::now;
 
-const IP: LazyLock<IpAddress> = LazyLock::new(|| IpAddress::from_str("10.0.1.1").unwrap());
+const IP: LazyLock<IpAddress> = LazyLock::new(|| IpAddress::from_str("192.168.179.2").unwrap());
 const GATEWAY: LazyLock<Ipv4Address> = LazyLock::new(|| Ipv4Address::from_str("192.168.179.1").unwrap());
 const PORT: u16 = 5555;
 
@@ -40,54 +40,6 @@ pub fn tcp_echo_server<T: Transport>(dev: DeviceImpl<T>) {
 
     let mut sockets = SocketSet::new(vec![]);
 
-    // ICMP
-
-    let icmp_rx_buffer = icmp::PacketBuffer::new(vec![icmp::PacketMetadata::EMPTY], vec![0; 256]);
-    let icmp_tx_buffer = icmp::PacketBuffer::new(vec![icmp::PacketMetadata::EMPTY], vec![0; 256]);
-    let icmp_socket = icmp::Socket::new(icmp_rx_buffer, icmp_tx_buffer);
-    let icmp_handle = sockets.add(icmp_socket);
-
-    let mut can_echo_tcp = false;
-
-    println!("Waiting for PING...");
-
-    while !can_echo_tcp {
-        let timestamp = now();
-        iface.poll(timestamp, &mut device, &mut sockets);
-
-        let icmp_socket = sockets.get_mut::<icmp::Socket>(icmp_handle);
-
-        if !icmp_socket.is_open() {
-            icmp_socket.bind(icmp::Endpoint::Ident(0x22b)).unwrap();
-            continue;
-        }
-
-        if icmp_socket.can_send() {
-            //println!("Can send");
-        }
-
-        if icmp_socket.can_recv() {
-            println!("Can recv");
-
-            let (payload, remote_addr) = icmp_socket.recv().unwrap();
-            let icmp_packet = Icmpv4Packet::new_checked(&payload).unwrap();
-            let icmp_repr = Icmpv4Repr::parse(&icmp_packet, &device.capabilities().checksum).unwrap();
-
-            if let Icmpv4Repr::EchoReply { seq_no, data, .. } = icmp_repr {
-                let packet_timestamp_ms = NetworkEndian::read_i64(data);
-
-                println!(
-                    "{} bytes from {}: icmp_seq={}, time={}ms",
-                    data.len(),
-                    remote_addr,
-                    seq_no,
-                    now().total_millis() - packet_timestamp_ms
-                );
-            }
-        }
-    }
-
-    /*
     println!("Replied to PING, entering TCP server...");
 
     // TCP
@@ -133,7 +85,7 @@ pub fn tcp_echo_server<T: Transport>(dev: DeviceImpl<T>) {
             socket.close();
             break;
         }
-    }*/
+    }
 }
 
 fn recv(buffer: &mut [u8]) -> (usize, Vec<u8>) {

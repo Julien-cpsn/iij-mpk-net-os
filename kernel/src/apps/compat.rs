@@ -56,7 +56,7 @@ impl<T: Transport> RxToken for VirtIoRxToken<T> {
     fn consume<R, F>(self, f: F) -> R where F: FnOnce(&[u8]) -> R {
         let mut rx_buf = self.1;
 
-        crate::println!("RECV {} bytes: {:02X?}", rx_buf.packet_len(), rx_buf.packet());
+        //crate::println!("RECV {} bytes: {:02X?}", rx_buf.packet_len(), rx_buf.packet());
 
         let result = f(rx_buf.packet_mut());
         self.0.borrow_mut().recycle_rx_buffer(rx_buf).unwrap();
@@ -71,7 +71,7 @@ impl<T: Transport> TxToken for VirtIoTxToken<T> {
         let mut tx_buf = dev.new_tx_buffer(len);
         let result = f(tx_buf.packet_mut());
 
-        crate::println!("SEND {} bytes: {:02X?}", len, tx_buf.packet());
+        //crate::println!("SEND {} bytes: {:02X?}", len, tx_buf.packet());
 
         dev.send(tx_buf).unwrap();
 
