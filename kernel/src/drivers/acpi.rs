@@ -1,11 +1,8 @@
 use crate::drivers::mmio::MMCONFIG_PHYS_BASE;
 use acpi::{AcpiHandler, AcpiTables, PciConfigRegions, PhysicalMapping};
 use core::ptr::NonNull;
-use spin::Once;
 use x86_64::{PhysAddr, VirtAddr};
 
-
-pub static RSDP: Once<u64> = Once::new();
 
 #[derive(Clone)]
 pub struct AcpiHandlerImpl {
@@ -42,8 +39,6 @@ impl AcpiHandler for AcpiHandlerImpl {
 }
 
 pub fn init_acpi(rsdp: u64, physical_memory_offset: VirtAddr) {
-    RSDP.call_once(|| rsdp);
-
     let handler = AcpiHandlerImpl::new(physical_memory_offset);
     let acpi = unsafe { AcpiTables::from_rsdp(handler, rsdp as usize) }.expect("ACPI tables failed");
 

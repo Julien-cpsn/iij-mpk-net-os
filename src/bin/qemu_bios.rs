@@ -10,7 +10,7 @@ fn main() {
     qemu.arg("-serial").arg("mon:stdio");
     qemu.arg("-display").arg("none");
 
-    qemu.arg("-netdev").arg("tap,id=u0,ifname=tap0,script=no,downscript=no");
+    qemu.arg("-netdev").arg("tap,id=u0,ifname=tap0,script=no,downscript=no,vhost=on");
     qemu.arg("-device").arg("virtio-net-pci,mac=7E-EF-41-A1-C9-D3,netdev=u0");
 
     qemu.arg("--device").arg("isa-debug-exit,iobase=0xf4,iosize=0x04");

@@ -1,56 +1,44 @@
-use crate::memory::tables::MEMORY_REGIONS;
-use bootloader_api::info::MemoryRegionKind;
+use crate::memory::tables::{MEMORY_REGIONS, PHYSICAL_MEMORY_OFFSET};
+use crate::println;
+use bootloader_api::info::{MemoryRegionKind, MemoryRegions};
 use linked_list_allocator::LockedHeap;
 use spin::Mutex;
-use x86_64::structures::paging::{FrameAllocator, FrameDeallocator, PageSize, PhysFrame};
-use x86_64::PhysAddr;
 
-pub static BOOT_INFO_FRAME_ALLOCATOR: Mutex<BootInfoFrameAllocator> = Mutex::new(BootInfoFrameAllocator(0));
 
 #[global_allocator]
 static ALLOCATOR: LockedHeap = LockedHeap::empty();
 
-const HEAP_SIZE: usize = 0x10000; // 64K
+pub fn init_heap(memory_regions: &MemoryRegions) {
+    let mut start = 0;
+    let mut size = 0;
 
-static mut HEAP: [u64; HEAP_SIZE / 8] = [0; HEAP_SIZE / 8];
+    println!("\tMemory regions:");
 
-pub struct BootInfoFrameAllocator(usize);
+    for memory_region in memory_regions.iter() {
+        println!(
+            "\t\t{:?}: {:#X}..{:#X} ({} bytes)",
+            memory_region.kind,
+            memory_region.start,
+            memory_region.end,
+            memory_region.end - memory_region.start
+        );
 
-unsafe impl<T: PageSize> FrameAllocator<T> for BootInfoFrameAllocator {
-    fn allocate_frame(&mut self) -> Option<PhysFrame<T>> {
-        let memory_regions = MEMORY_REGIONS.get().unwrap().lock();
-
-        let usable_regions = memory_regions
-            .iter()
-            .filter(|r| r.kind == MemoryRegionKind::Usable);
-
-        // map each region to its address range
-        let addr_ranges = usable_regions
-            .map(|r| r.start..r.end);
-
-        // transform to an iterator of frame start addresses
-        let frame_addresses = addr_ranges.flat_map(|r| r.step_by(T::SIZE as usize));
-
-        // create `PhysFrame` types from the start addresses
-        let frame = frame_addresses
-            .map(|addr| PhysFrame::containing_address(PhysAddr::new(addr)))
-            .nth(self.0);
-
-        self.0 += 1;
-
-        frame
+        if matches!(memory_region.kind, MemoryRegionKind::Usable) {
+            let region_size = memory_region.end - memory_region.start;
+            if region_size > size {
+                start = memory_region.start;
+                size = region_size;
+            }
+        }
     }
-}
 
-impl<T: PageSize> FrameDeallocator<T> for BootInfoFrameAllocator {
-    unsafe fn deallocate_frame(&mut self, _frame: PhysFrame<T>) {
+    println!("\tHeap size: {size}");
 
-    }
-}
+    let virt_addr = PHYSICAL_MEMORY_OFFSET.get().unwrap().as_u64() + start;
 
-pub fn init_heap() {
     unsafe {
-        let heap_start = &raw mut HEAP as *mut u8;
-        ALLOCATOR.lock().init(heap_start, HEAP_SIZE);
+        ALLOCATOR.lock().init(virt_addr as *mut u8, size as usize);
     }
+
+    MEMORY_REGIONS.call_once(|| Mutex::new(memory_regions.to_vec()));
 }

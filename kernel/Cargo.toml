@@ -15,9 +15,8 @@ virtio-drivers = { version = "0.13.0" }
 
 spin = { version = "0.12.1", features = ["lazy"] }
 accessor = "0.3.3"
-byteorder = { version = "1.5.0", default-features = false }
 
 [dependencies.smoltcp]
 version = "0.13.1"
 default-features = false
-features = ["alloc", "medium-ethernet", "proto-ipv4", "socket-raw", "socket-icmp", "socket-udp", "socket-tcp", "auto-icmp-echo-reply"]
+features = ["alloc", "medium-ethernet", "proto-ipv4", "socket-icmp", "socket-udp", "socket-tcp", "auto-icmp-echo-reply"]

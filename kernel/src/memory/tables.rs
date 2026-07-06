@@ -1,10 +1,11 @@
+use crate::println;
 use alloc::vec::Vec;
 use bootloader_api::info::MemoryRegion;
 use spin::{Mutex, Once, RwLock};
-use x86_64::structures::paging::{OffsetPageTable, PageTable};
-use x86_64::{PhysAddr, VirtAddr};
 use x86_64::registers::control::Cr3;
 use x86_64::structures::paging::page_table::FrameError;
+use x86_64::structures::paging::{OffsetPageTable, PageTable, PhysFrame, Size1GiB, Size2MiB};
+use x86_64::{PhysAddr, VirtAddr};
 
 pub static PHYSICAL_MEMORY_OFFSET: Once<VirtAddr> = Once::new();
 pub static MAPPER: Once<RwLock<OffsetPageTable<'static>>> = Once::new();
@@ -16,10 +17,14 @@ pub static MEMORY_REGIONS: Once<Mutex<Vec<MemoryRegion>>> = Once::new();
 /// complete physical memory is mapped to virtual memory at the passed
 /// `physical_memory_offset`. Also, this function must be only called once
 /// to avoid aliasing `&mut` references (which is undefined behavior).
-pub fn init(physical_memory_offset: VirtAddr) -> OffsetPageTable<'static> {
-    PHYSICAL_MEMORY_OFFSET.call_once(|| physical_memory_offset);
+pub fn init_memory_mapping(physical_memory_offset: VirtAddr) {
+    println!("\tPhysical memory offset: {:#X}", physical_memory_offset);
+
     let level_4_table = active_level_4_table(physical_memory_offset);
-    unsafe { OffsetPageTable::new(level_4_table, physical_memory_offset) }
+    let offset_page_table = unsafe { OffsetPageTable::new(level_4_table, physical_memory_offset) };
+
+    MAPPER.call_once(|| RwLock::new(offset_page_table));
+    PHYSICAL_MEMORY_OFFSET.call_once(|| physical_memory_offset);
 }
 
 /// Returns a mutable reference to the active level 4 table.
@@ -64,7 +69,7 @@ fn translate_addr_inner(addr: VirtAddr, physical_memory_offset: VirtAddr) -> Opt
     let mut frame = level_4_table_frame;
 
     // traverse the multi-level page table
-    for &index in &table_indexes {
+    for (t_index, &index) in table_indexes.iter().enumerate() {
         // convert the frame into a page table reference
         let virt = physical_memory_offset + frame.start_address().as_u64();
         let table_ptr: *const PageTable = virt.as_ptr();
@@ -75,7 +80,26 @@ fn translate_addr_inner(addr: VirtAddr, physical_memory_offset: VirtAddr) -> Opt
         frame = match entry.frame() {
             Ok(frame) => frame,
             Err(FrameError::FrameNotPresent) => return None,
-            Err(FrameError::HugeFrame) => panic!("Huge page detected at level {:?} for address {:#X}", index, addr.as_u64())};
+            Err(FrameError::HugeFrame) => {
+                let phys = match t_index {
+                    0 => panic!("Too huge pages not supported"),
+                    1 => {
+                        let new_frame: PhysFrame<Size1GiB> = PhysFrame::containing_address(entry.addr());
+                        new_frame.start_address() + (addr.as_u64()  % 0x40000000)
+                    },
+                    2 => {
+                        let new_frame: PhysFrame<Size2MiB> = PhysFrame::containing_address(entry.addr());
+                        new_frame.start_address() + (addr.as_u64() % 0x200000)
+
+                    }
+                    _ => unreachable!()
+                };
+
+                //crate::println!("trans: {:#X} -> {:#X}", addr, phys);
+
+                return Some(phys)
+            },
+        };
     }
 
     // calculate the physical address by adding the page offset

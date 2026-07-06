@@ -16,11 +16,10 @@ use crate::drivers::acpi::init_acpi;
 use crate::drivers::pci::enumerate_pci;
 use crate::drivers::pic::init_pic;
 use crate::memory::allocator::init_heap;
-use crate::memory::tables::{MAPPER, MEMORY_REGIONS};
+use crate::memory::tables::init_memory_mapping;
 use crate::utils::qemu::{exit_qemu, QemuExitCode};
 use bootloader_api::config::Mapping;
 use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
-use spin::{Mutex, RwLock};
 use x86_64::VirtAddr;
 
 pub static BOOTLOADER_CONFIG: BootloaderConfig = {
@@ -52,22 +51,12 @@ pub fn init(boot_info: &'static mut BootInfo) {
     println!("IDT");
     init_idt();
 
-    println!("Heap");
-    init_heap();
-
-    let physical_memory_offset = VirtAddr::new(boot_info.physical_memory_offset.take().expect("No physical memory"));
-    let memory_regions = boot_info.memory_regions.to_vec();
-
     println!("Memory mapper");
-    println!("\tPhysical offset: {:#X}", physical_memory_offset);
-    MAPPER.call_once(|| RwLock::new(memory::tables::init(physical_memory_offset)));
+    let physical_memory_offset = VirtAddr::new(boot_info.physical_memory_offset.take().expect("No physical memory"));
+    init_memory_mapping(physical_memory_offset);
 
-    println!("Memory regions:");
-    MEMORY_REGIONS.call_once(|| Mutex::new(memory_regions));
-
-    for r in MEMORY_REGIONS.get().unwrap().lock().iter() {
-        println!("\t{:?}: {:#x}..{:#x} ({} bytes)", r.kind, r.start, r.end, r.end - r.start);
-    }
+    println!("Heap");
+    init_heap(&boot_info.memory_regions);
 
     println!("ACPI");
     let rsdp = boot_info.rsdp_addr.take().expect("Failed to get RSDP address");

@@ -1,6 +1,6 @@
 use virtio_drivers::device::net::VirtIONet;
 use virtio_drivers::transport::Transport;
-use crate::apps::tcp_echo_server::tcp_echo_server;
+use crate::apps::http_server::http_server;
 use crate::drivers::dma::HalImpl;
 use crate::println;
 
@@ -15,5 +15,5 @@ pub fn init_virtio_net<T: Transport>(transport: T) {
 
     println!("MAC address: {:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-    tcp_echo_server(net);
+    http_server(net);
 }

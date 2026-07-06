@@ -323,7 +323,6 @@ dependencies = [
  "accessor",
  "acpi",
  "bootloader_api",
- "byteorder",
  "linked_list_allocator",
  "pic8259",
  "smoltcp",
