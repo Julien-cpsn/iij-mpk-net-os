@@ -1,46 +1,21 @@
-use crate::apps::compat::{DeviceImpl, DeviceWrapper};
 use crate::println;
+use crate::utils::compat::DeviceWrapper;
 use crate::utils::time::now;
 use alloc::borrow::ToOwned;
 use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{format, vec};
 use core::str::FromStr;
-use smoltcp::iface::{Config, Interface, SocketHandle, SocketSet};
+use smoltcp::iface::{Interface, SocketHandle, SocketSet};
 use smoltcp::socket::tcp;
-use smoltcp::wire::{HardwareAddress, IpAddress, IpCidr, Ipv4Address};
-use spin::LazyLock;
-use virtio_drivers::transport::Transport;
+use virtio_drivers::transport::pci::PciTransport;
 
-const IP: LazyLock<IpAddress> = LazyLock::new(|| IpAddress::from_str("192.168.179.2").unwrap());
-const GATEWAY: LazyLock<Ipv4Address> = LazyLock::new(|| Ipv4Address::from_str("192.168.179.1").unwrap());
 const PORT: u16 = 80;
 
 const SOCKET_NUMBER: u8 = 64;
 
-pub fn http_server<T: Transport>(dev: DeviceImpl<T>) {
-    let mut device = DeviceWrapper::new(dev);
-
-    // Create interface
-    let mut config = Config::new(HardwareAddress::Ethernet(device.mac_address()));
-    config.random_seed = 0x2333;
-
-    let mut iface = Interface::new(config, &mut device, now());
-
-    iface.update_ip_addrs(|ip_addrs| {
-        ip_addrs
-            .push(IpCidr::new(*IP, 24))
-            .unwrap();
-    });
-
-    iface
-        .routes_mut()
-        .add_default_ipv4_route(*GATEWAY)
-        .unwrap();
-
+pub fn http_server(mut device: DeviceWrapper<PciTransport>, mut iface: Interface) {
     let mut sockets = SocketSet::new(vec![]);
-
-    // TCP
 
     let mut tcp_handles: Vec<(SocketHandle, bool)> = Vec::new();
 

@@ -8,5 +8,4 @@ sudo $(which brctl) addif br0 tap0
 sudo dnsmasq --interface=br0 --bind-interfaces --dhcp-range=192.168.179.10,192.168.179.254
 sudo ip link set br0 up
 
-sudo ip route add 10.0.1.0/24 via 192.168.179.1
 # Guest IP will be 10.0.1.1

@@ -1,6 +1,9 @@
 #![no_std]
 #![no_main]
 #![feature(abi_x86_interrupt)]
+#![feature(abi_unadjusted)]
+#![feature(link_llvm_intrinsics)]
+#![allow(internal_features)]
 
 extern crate alloc;
 
@@ -12,6 +15,7 @@ mod cpu;
 
 use crate::cpu::gdt::init_gdt;
 use crate::cpu::idt::init_idt;
+use crate::cpu::pkru::init_pku;
 use crate::drivers::acpi::init_acpi;
 use crate::drivers::pci::enumerate_pci;
 use crate::drivers::pic::init_pic;
@@ -35,15 +39,18 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     println!("Entered kernel with boot info: {boot_info:?}");
     println!();
 
-    init(boot_info);
+    init_kernel(boot_info);
 
     enumerate_pci();
 
     exit_qemu(QemuExitCode::Success);
 }
 
-pub fn init(boot_info: &'static mut BootInfo) {
+pub fn init_kernel(boot_info: &'static mut BootInfo) {
     println!("Initializing kernel...");
+
+    println!("PKU");
+    init_pku();
 
     println!("GDT");
     init_gdt();

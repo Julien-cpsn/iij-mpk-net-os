@@ -1,6 +1,7 @@
 use crate::memory::tables::{MEMORY_REGIONS, PHYSICAL_MEMORY_OFFSET};
 use crate::println;
 use bootloader_api::info::{MemoryRegionKind, MemoryRegions};
+use humansize::{format_size, DECIMAL};
 use linked_list_allocator::LockedHeap;
 use spin::Mutex;
 
@@ -15,14 +16,6 @@ pub fn init_heap(memory_regions: &MemoryRegions) {
     println!("\tMemory regions:");
 
     for memory_region in memory_regions.iter() {
-        println!(
-            "\t\t{:?}: {:#X}..{:#X} ({} bytes)",
-            memory_region.kind,
-            memory_region.start,
-            memory_region.end,
-            memory_region.end - memory_region.start
-        );
-
         if matches!(memory_region.kind, MemoryRegionKind::Usable) {
             let region_size = memory_region.end - memory_region.start;
             if region_size > size {
@@ -32,8 +25,6 @@ pub fn init_heap(memory_regions: &MemoryRegions) {
         }
     }
 
-    println!("\tHeap size: {size}");
-
     let virt_addr = PHYSICAL_MEMORY_OFFSET.get().unwrap().as_u64() + start;
 
     unsafe {
@@ -41,4 +32,16 @@ pub fn init_heap(memory_regions: &MemoryRegions) {
     }
 
     MEMORY_REGIONS.call_once(|| Mutex::new(memory_regions.to_vec()));
+
+    for memory_region in memory_regions.iter() {
+        println!(
+            "\t\t{:?}: {:#X}..{:#X} ({})",
+            memory_region.kind,
+            memory_region.start,
+            memory_region.end,
+            format_size(memory_region.end - memory_region.start, DECIMAL)
+        );
+    }
+
+    println!("\tHeap size: {}", format_size(size, DECIMAL));
 }

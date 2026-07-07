@@ -1,5 +1,5 @@
+use crate::apps::interface::NET_QUEUE_SIZE;
 use crate::drivers::dma::HalImpl;
-use crate::drivers::virtio_net::NET_QUEUE_SIZE;
 use alloc::rc::Rc;
 use core::cell::RefCell;
 use smoltcp::phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken};

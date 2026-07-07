@@ -2,15 +2,43 @@ use std::env;
 use std::process::{exit, Command};
 
 fn main() {
+    #[cfg(feature = "dpdk-vhost")]
+    let mut qemu = {
+        println!("QEMU should be run as root to access hugepages");
+
+        let mut qemu = Command::new("sudo");
+        qemu.arg("qemu-system-x86_64");
+
+        qemu
+    };
+
+    #[cfg(not(feature = "dpdk-vhost"))]
     let mut qemu = Command::new("qemu-system-x86_64");
+
+    qemu.arg("-cpu").arg("qemu64,+pku");
     qemu.arg("-machine").arg("q35");
     qemu.arg("-m").arg("8G");
+    qemu.arg("--mem-prealloc");
+
     qemu.arg("-drive").arg(format!("format=raw,file={}", env!("BIOS_IMAGE")));
 
     qemu.arg("-serial").arg("mon:stdio");
     qemu.arg("-display").arg("none");
 
-    qemu.arg("-netdev").arg("tap,id=u0,ifname=tap0,script=no,downscript=no,vhost=on");
+    #[cfg(feature = "dpdk-vhost")]
+    {
+        qemu.arg("-chardev").arg("socket,id=char0,path=/tmp/vhost-user1,server=on");
+        qemu.arg("-netdev").arg("type=vhost-user,id=u0,chardev=char0,vhostforce=on");
+        qemu.arg("-object").arg("memory-backend-file,id=mem0,size=1024M,mem-path=/dev/hugepages,share=on");
+        //qemu.arg("-numa").arg("node,memdev=mem0");
+    }
+
+    #[cfg(feature = "tap")]
+    {
+        qemu.arg("-netdev").arg("tap,id=u0,ifname=tap0,script=no,downscript=no,vhost=on");
+    }
+
+    #[cfg(any(feature = "dpdk-vhost", feature = "tap"))]
     qemu.arg("-device").arg("virtio-net-pci,mac=7E-EF-41-A1-C9-D3,netdev=u0");
 
     qemu.arg("--device").arg("isa-debug-exit,iobase=0xf4,iosize=0x04");

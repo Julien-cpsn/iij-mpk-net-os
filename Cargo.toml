@@ -15,3 +15,7 @@ kernel = { path = "kernel", artifact = "bin", target = "x86_64-unknown-none" }
 [workspace.dependencies]
 kernel = { version = "0.1.0", path = "kernel" }
 
+[features]
+default = ["dpdk-vhost"]
+dpdk-vhost = []
+tap = []
