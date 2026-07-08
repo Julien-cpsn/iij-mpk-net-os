@@ -1,6 +1,7 @@
 use crate::println;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::{InterruptStackFrame, PageFaultErrorCode};
+use crate::cpu::syscall::syscall_entry;
 
 pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 
@@ -18,6 +19,17 @@ pub extern "x86-interrupt" fn page_fault_handler(stack_frame: InterruptStackFram
     println!("Error Code: {:?}", error_code);
     println!("{:?}", stack_frame);
     hlt_loop();
+}
+
+pub extern "x86-interrupt" fn general_protection_fault_handler(stack_frame: InterruptStackFrame, error_code: u64) {
+    println!("EXCEPTION: GENERAL PROTECTION");
+    println!("Error code: {}", error_code);
+    println!("{:#?}", stack_frame);
+    hlt_loop();
+}
+
+pub extern "x86-interrupt" fn syscall_handler(_stack_frame: InterruptStackFrame) {
+    syscall_entry()
 }
 
 pub fn hlt_loop() -> ! {

@@ -1,7 +1,12 @@
 use std::env;
 use std::process::{exit, Command};
 
+
+const MEM_SIZE: &str = "4G";
+
 fn main() {
+    println!("{}", env!("BIOS_IMAGE"));
+
     #[cfg(feature = "dpdk-vhost")]
     let mut qemu = {
         println!("QEMU should be run as root to access hugepages");
@@ -15,10 +20,10 @@ fn main() {
     #[cfg(not(feature = "dpdk-vhost"))]
     let mut qemu = Command::new("qemu-system-x86_64");
 
-    qemu.arg("-cpu").arg("qemu64,+pku");
+    qemu.arg("-cpu").arg("qemu64,+pku,+pks");
     qemu.arg("-machine").arg("q35");
-    qemu.arg("-m").arg("8G");
-    qemu.arg("--mem-prealloc");
+    qemu.arg("-m").arg(MEM_SIZE);
+    //qemu.arg("--mem-prealloc");
 
     qemu.arg("-drive").arg(format!("format=raw,file={}", env!("BIOS_IMAGE")));
 
@@ -29,8 +34,8 @@ fn main() {
     {
         qemu.arg("-chardev").arg("socket,id=char0,path=/tmp/vhost-user1,server=on");
         qemu.arg("-netdev").arg("type=vhost-user,id=u0,chardev=char0,vhostforce=on");
-        qemu.arg("-object").arg("memory-backend-file,id=mem0,size=1024M,mem-path=/dev/hugepages,share=on");
-        //qemu.arg("-numa").arg("node,memdev=mem0");
+        qemu.arg("-object").arg(format!("memory-backend-file,id=mem0,size={MEM_SIZE},mem-path=/dev/hugepages,share=on"));
+        qemu.arg("-numa").arg("node,memdev=mem0");
     }
 
     #[cfg(feature = "tap")]

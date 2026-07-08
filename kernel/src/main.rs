@@ -15,7 +15,7 @@ mod cpu;
 
 use crate::cpu::gdt::init_gdt;
 use crate::cpu::idt::init_idt;
-use crate::cpu::pkru::init_pku;
+use crate::cpu::protection::pk::init_pk;
 use crate::drivers::acpi::init_acpi;
 use crate::drivers::pci::enumerate_pci;
 use crate::drivers::pic::init_pic;
@@ -41,16 +41,14 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     init_kernel(boot_info);
 
+    //init_user_mode();
     enumerate_pci();
 
     exit_qemu(QemuExitCode::Success);
 }
 
-pub fn init_kernel(boot_info: &'static mut BootInfo) {
+pub fn init_kernel(boot_info: &mut BootInfo) {
     println!("Initializing kernel...");
-
-    println!("PKU");
-    init_pku();
 
     println!("GDT");
     init_gdt();
@@ -64,6 +62,9 @@ pub fn init_kernel(boot_info: &'static mut BootInfo) {
 
     println!("Heap");
     init_heap(&boot_info.memory_regions);
+
+    println!("PKU & PKS");
+    init_pk();
 
     println!("ACPI");
     let rsdp = boot_info.rsdp_addr.take().expect("Failed to get RSDP address");

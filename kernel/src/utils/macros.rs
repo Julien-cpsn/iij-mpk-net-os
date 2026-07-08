@@ -17,7 +17,7 @@ macro_rules! dbg {
     ($val:expr $(,)?) => {
         match $val {
             tmp => {
-                $crate::println!("{} = {:#?}\n", stringify!($val), &tmp as &dyn core::fmt::Debug);
+                $crate::println!("{} = {:#?}", stringify!($val), &tmp as &dyn core::fmt::Debug);
                 tmp
             }
         }
