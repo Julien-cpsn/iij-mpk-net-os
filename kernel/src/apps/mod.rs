@@ -4,3 +4,4 @@ mod http_server;
 mod udp_server;
 pub mod interface;
 pub mod user;
+pub mod benchmark;

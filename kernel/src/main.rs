@@ -25,6 +25,8 @@ use crate::utils::qemu::{exit_qemu, QemuExitCode};
 use bootloader_api::config::Mapping;
 use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
 use x86_64::VirtAddr;
+use crate::apps::benchmark::benchmark;
+use crate::utils::time::now;
 
 pub static BOOTLOADER_CONFIG: BootloaderConfig = {
     let mut config = BootloaderConfig::new_default();
@@ -42,7 +44,8 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     init_kernel(boot_info);
 
     //init_user_mode();
-    enumerate_pci();
+    //enumerate_pci();
+    //benchmark();
 
     exit_qemu(QemuExitCode::Success);
 }

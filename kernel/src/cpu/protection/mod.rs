@@ -3,6 +3,6 @@ pub mod pk;
 #[allow(unused)]
 pub mod pkrs;
 #[allow(unused)]
-mod pkru;
+pub mod pkru;
 #[allow(unused)]
 pub mod mprotect;

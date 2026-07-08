@@ -1,7 +1,7 @@
 use crate::println;
 use alloc::vec::Vec;
 use bootloader_api::info::MemoryRegion;
-use spin::{Mutex, Once, RwLock};
+use spin::{Mutex, Once};
 use x86_64::registers::control::Cr3;
 use x86_64::structures::paging::page_table::{FrameError, PageTableEntry};
 use x86_64::structures::paging::{OffsetPageTable, PageSize, PageTable, PageTableFlags, PhysFrame, Size1GiB, Size2MiB, Size4KiB};
@@ -9,7 +9,7 @@ use x86_64::{PhysAddr, VirtAddr};
 
 
 pub static PHYSICAL_MEMORY_OFFSET: Once<VirtAddr> = Once::new();
-pub static MAPPER: Once<RwLock<OffsetPageTable<'static>>> = Once::new();
+pub static MAPPER: Once<OffsetPageTable<'static>> = Once::new();
 pub static MEMORY_REGIONS: Once<Mutex<Vec<MemoryRegion>>> = Once::new();
 
 /// Initialize a new OffsetPageTable.
@@ -24,7 +24,7 @@ pub fn init_memory_mapping(physical_memory_offset: VirtAddr) {
     let level_4_table = active_level_4_table(physical_memory_offset);
     let offset_page_table = unsafe { OffsetPageTable::new(level_4_table, physical_memory_offset) };
 
-    MAPPER.call_once(|| RwLock::new(offset_page_table));
+    MAPPER.call_once(|| offset_page_table);
     PHYSICAL_MEMORY_OFFSET.call_once(|| physical_memory_offset);
 }
 
