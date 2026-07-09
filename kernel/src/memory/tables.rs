@@ -6,7 +6,8 @@ use x86_64::registers::control::Cr3;
 use x86_64::structures::paging::page_table::{FrameError, PageTableEntry};
 use x86_64::structures::paging::{OffsetPageTable, PageSize, PageTable, PageTableFlags, PhysFrame, Size1GiB, Size2MiB, Size4KiB};
 use x86_64::{PhysAddr, VirtAddr};
-
+use aligned_vec::{AVec, avec, ConstAlign};
+use core::mem::ManuallyDrop;
 
 pub static PHYSICAL_MEMORY_OFFSET: Once<VirtAddr> = Once::new();
 pub static MAPPER: Once<OffsetPageTable<'static>> = Once::new();
@@ -47,8 +48,7 @@ fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut PageTa
 /// Translates the given virtual address to the mapped physical address, or
 /// `None` if the address is not mapped.
 ///
-/// This function is unsafe because the caller must guarantee that the
-/// complete physical memory is mapped to virtual memory at the passed
+/// This function is unsafe because the caller must guarantee that the complete physical memory is mapped to virtual memory at the passed
 /// `physical_memory_offset`.
 pub fn translate_addr(addr: VirtAddr) -> Option<PhysAddr> {
     let (entry, entry_size) = find_page_table_entry(addr)?;
@@ -152,4 +152,60 @@ pub fn addr_frame_set_or_flags(addr: VirtAddr, flags: PageTableFlags, recursive:
     }
 
     Some(())
+}
+
+
+
+pub fn add_page_table_entry(addr: VirtAddr) {
+    println!("ADD PAGE TABLE: {:#X}", addr);
+
+    let physical_memory_offset = PHYSICAL_MEMORY_OFFSET.get().unwrap();
+
+    // read the active level 4 frame from the CR3 register
+    let (level_4_table_frame, _) = Cr3::read();
+
+    let table_indexes = [
+        addr.p4_index(), addr.p3_index(), addr.p2_index(), addr.p1_index()
+    ];
+    
+    let mut frame = level_4_table_frame;
+    let mut entry = None;
+    //let mut page_size = None;
+
+    // traverse the multi-level page table
+    for (t_index, &index) in table_indexes.iter().enumerate() {
+        // convert the frame into a page table reference
+        let virt = physical_memory_offset.as_u64() + frame.start_address().as_u64();
+        let table_ptr = virt as *mut PageTable;
+        let table = unsafe {&mut *table_ptr};
+
+        // read the page table entry and update `frame`
+        entry = Some(&mut table[index]);
+
+        frame = match entry.as_ref().unwrap().frame() {
+            Ok(frame) => {
+                println!("FRAME: {:#X}", frame.start_address().as_u64());
+                frame
+            },
+            Err(FrameError::FrameNotPresent) => {
+                if t_index < 3 {
+                    let mut manual_vec = ManuallyDrop::new(avec![[4096]|0; 4096]);
+                    assert_eq!((&manual_vec).as_ptr() as usize % 4096, 0);
+                    let phys_addr = (&manual_vec).as_ptr() as u64 - physical_memory_offset.as_u64();
+                    entry.unwrap().set_addr(PhysAddr::new(phys_addr), PageTableFlags::PRESENT | PageTableFlags::WRITABLE);
+                    println!("NEW ENTRY {t_index} {phys_addr:#X}");
+                    PhysFrame::from_start_address(PhysAddr::new(phys_addr)).expect("error")
+                } else {
+                    let phys_addr = addr.as_u64() - physical_memory_offset.as_u64();
+                    println!("ADDR SET {phys_addr:#X}");
+                    entry.unwrap().set_addr(PhysAddr::new(phys_addr), PageTableFlags::PRESENT | PageTableFlags::WRITABLE);
+                    break;
+                }
+            },
+            Err(FrameError::HugeFrame) => {
+                println!("HUGE FRAME");
+                break;
+            },
+        };
+    }
 }

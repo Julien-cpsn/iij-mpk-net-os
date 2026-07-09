@@ -20,7 +20,8 @@ fn main() {
     #[cfg(not(feature = "dpdk-vhost"))]
     let mut qemu = Command::new("qemu-system-x86_64");
 
-    qemu.arg("-cpu").arg("qemu64,+pku,+pks");
+    qemu.arg("-cpu").arg("host");
+    qemu.arg("-enable-kvm");
     qemu.arg("-machine").arg("q35");
     qemu.arg("-m").arg(MEM_SIZE);
     //qemu.arg("--mem-prealloc");

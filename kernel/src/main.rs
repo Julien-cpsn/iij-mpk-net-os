@@ -63,8 +63,8 @@ pub fn init_kernel(boot_info: &mut BootInfo) {
     println!("Heap");
     init_heap(&boot_info.memory_regions);
 
-    println!("PKU & PKS");
-    init_pk();
+    //println!("PKU & PKS");
+    //init_pk();
 
     println!("ACPI");
     let rsdp = boot_info.rsdp_addr.take().expect("Failed to get RSDP address");
