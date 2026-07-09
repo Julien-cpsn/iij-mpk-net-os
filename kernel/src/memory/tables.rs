@@ -58,8 +58,8 @@ pub fn translate_addr(addr: VirtAddr) -> Option<PhysAddr> {
         Err(FrameError::FrameNotPresent) => return None,
         Err(FrameError::HugeFrame) => {
             let new_frame = match entry_size {
-                Size1GiB::SIZE => PhysFrame::<Size1GiB>::containing_address(PhysAddr::new(addr.as_u64())).start_address(),
-                Size2MiB::SIZE => PhysFrame::<Size2MiB>::containing_address(PhysAddr::new(addr.as_u64())).start_address(),
+                Size1GiB::SIZE => PhysFrame::<Size1GiB>::containing_address(PhysAddr::new(entry.addr().as_u64())).start_address(),
+                Size2MiB::SIZE => PhysFrame::<Size2MiB>::containing_address(PhysAddr::new(entry.addr().as_u64())).start_address(),
                 _ => unreachable!()
             };
 
@@ -103,18 +103,13 @@ pub fn find_page_table_entry(addr: VirtAddr) -> Option<(&'static mut PageTableEn
             },
             Err(FrameError::FrameNotPresent) => return None,
             Err(FrameError::HugeFrame) => {
-                match t_index {
+                page_size = match t_index {
                     0 => panic!("Too huge pages not supported"),
-                    1 => {
-                        page_size = Some(Size1GiB::SIZE);
-                        break
-                    },
-                    2 => {
-                        page_size = Some(Size2MiB::SIZE);
-                        break
-                    },
+                    1 => Some(Size1GiB::SIZE),
+                    2 => Some(Size2MiB::SIZE),
                     _ => unreachable!()
                 };
+                break
             },
         };
     }
