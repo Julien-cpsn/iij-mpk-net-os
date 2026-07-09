@@ -80,6 +80,7 @@ pub fn init_gdt() {
     }
 }
 
+#[allow(unused)]
 pub fn init_user_mode() {
     println!("Entering user mode...");
 

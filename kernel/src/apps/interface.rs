@@ -1,17 +1,17 @@
-use alloc::string::ToString;
-use crate::println;
 use crate::drivers::dma::HalImpl;
+use crate::println;
 use crate::utils::compat::DeviceWrapper;
 use crate::utils::time::now;
+use alloc::string::ToString;
 use core::str::FromStr;
 use smoltcp::iface::{Config, Interface};
-use smoltcp::wire::{HardwareAddress, IpAddress, IpCidr, Ipv4Address};
+use smoltcp::wire::{HardwareAddress, Ipv4Address, Ipv4Cidr};
 use spin::LazyLock;
 use virtio_drivers::device::net::VirtIONet;
 use virtio_drivers::transport::pci::PciTransport;
 
-const IP: LazyLock<IpAddress> = LazyLock::new(|| IpAddress::from_str("192.168.179.2").unwrap());
-const GATEWAY: LazyLock<Ipv4Address> = LazyLock::new(|| Ipv4Address::from_str("192.168.179.1").unwrap());
+pub const IP: LazyLock<Ipv4Address> = LazyLock::new(|| Ipv4Address::from_str("192.168.179.2").unwrap());
+pub const GATEWAY: LazyLock<Ipv4Address> = LazyLock::new(|| Ipv4Address::from_str("192.168.179.1").unwrap());
 const NET_BUFFER_LEN: usize = 2048;
 pub const NET_QUEUE_SIZE: usize = 2;
 
@@ -33,7 +33,7 @@ pub fn init_interface(transport: PciTransport) {
 
     iface.update_ip_addrs(|ip_addrs| {
         ip_addrs
-            .push(IpCidr::new(*IP, 24))
+            .push(Ipv4Cidr::new(*IP, 24).into())
             .unwrap();
     });
 
@@ -48,5 +48,6 @@ pub fn init_interface(transport: PciTransport) {
     println!("Virtio-net-pci interface initialized!\n");
 
     //crate::apps::http_server::http_server(device, iface);
-    crate::apps::udp_server::udp_rx_server(device, iface);
+    //crate::apps::ip::udp_rx::udp_rx_server(device, iface);
+    crate::apps::ip::udp_tx::udp_tx_server(device, iface);
 }

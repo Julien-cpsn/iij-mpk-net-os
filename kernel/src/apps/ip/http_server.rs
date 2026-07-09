@@ -9,28 +9,20 @@ use core::str::FromStr;
 use smoltcp::iface::{Interface, SocketHandle, SocketSet};
 use smoltcp::socket::tcp;
 use virtio_drivers::transport::pci::PciTransport;
+use crate::apps::ip::utils::{create_sockets, SocketType};
 
 const PORT: u16 = 80;
 
-const SOCKET_NUMBER: u8 = 64;
+const SOCKET_NUMBER: u16 = 64;
 
 pub fn http_server(mut device: DeviceWrapper<PciTransport>, mut iface: Interface) {
     let mut sockets = SocketSet::new(vec![]);
+    let mut handles: Vec<SocketHandle> = Vec::new();
 
-    let mut tcp_handles: Vec<(SocketHandle, bool)> = Vec::new();
+    create_sockets(&mut sockets, &mut handles, SocketType::Tcp, SOCKET_NUMBER);
 
-    println!("Creating {SOCKET_NUMBER} sockets...");
+    let mut tcp_handles: Vec<(SocketHandle, bool)> = handles.drain(..).map(|s| (s, false)).collect();
 
-    for _ in 0..SOCKET_NUMBER {
-        let tcp_rx_buffer = tcp::SocketBuffer::new(vec![0; 1024]);
-        let tcp_tx_buffer = tcp::SocketBuffer::new(vec![0; 1024]);
-        let tcp_socket = tcp::Socket::new(tcp_rx_buffer, tcp_tx_buffer);
-
-        let tcp_handle = sockets.add(tcp_socket);
-        tcp_handles.push((tcp_handle, false));
-    }
-
-    println!("Sockets created!");
     println!("===== HTTP server started =====\n");
 
     loop {

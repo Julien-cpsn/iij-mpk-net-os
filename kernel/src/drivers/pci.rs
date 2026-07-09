@@ -7,6 +7,7 @@ use virtio_drivers::transport::pci::bus::{Cam, Command, MmioCam, PciRoot};
 use virtio_drivers::transport::pci::{virtio_device_type, PciTransport};
 use virtio_drivers::transport::DeviceType;
 
+#[allow(unused)]
 pub fn enumerate_pci() {
     println!("Starting PCI scan...");
 

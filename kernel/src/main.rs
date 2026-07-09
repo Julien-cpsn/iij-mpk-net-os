@@ -17,7 +17,6 @@ use crate::cpu::gdt::init_gdt;
 use crate::cpu::idt::init_idt;
 use crate::cpu::protection::pk::init_pk;
 use crate::drivers::acpi::init_acpi;
-use crate::drivers::pci::enumerate_pci;
 use crate::drivers::pic::init_pic;
 use crate::memory::allocator::init_heap;
 use crate::memory::tables::init_memory_mapping;
@@ -25,8 +24,6 @@ use crate::utils::qemu::{exit_qemu, QemuExitCode};
 use bootloader_api::config::Mapping;
 use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
 use x86_64::VirtAddr;
-use crate::apps::benchmark::benchmark;
-use crate::utils::time::now;
 
 pub static BOOTLOADER_CONFIG: BootloaderConfig = {
     let mut config = BootloaderConfig::new_default();
@@ -43,9 +40,9 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
     init_kernel(boot_info);
 
-    //init_user_mode();
-    //enumerate_pci();
-    //benchmark();
+    //cpu::gdt::init_user_mode();
+    drivers::pci::enumerate_pci();
+    //apps::benchmark::benchmark();
 
     exit_qemu(QemuExitCode::Success);
 }
