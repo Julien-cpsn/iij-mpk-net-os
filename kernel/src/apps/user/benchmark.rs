@@ -30,12 +30,12 @@ pub fn benchmark() {
     println!("-- Counter based benchmark ({COUNT} iterations)");
     println!("Cr3 update + TLB flush");
     let duration = counter_based_bench(|| { update_cr3() }, COUNT);
-    println!("Result: {duration}");
+    println!("Result: {duration} ns");
     println!("1 call = {} ns", duration / COUNT);
     println!();
     println!("WRPKRU update");
     let duration = counter_based_bench(|| { write_pkru(8, PkPermission::NoAccess) }, COUNT);
-    println!("Result: {duration}");
+    println!("Result: {duration} ns");
     println!("1 call = {} ns", duration / COUNT);
 }
 
