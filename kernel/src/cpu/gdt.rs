@@ -1,7 +1,7 @@
 use crate::apps::user::user_entry;
 use crate::cpu::interrupt::DOUBLE_FAULT_IST_INDEX;
 use crate::memory::tables::addr_frame_set_or_flags;
-use crate::{dbg, println};
+use crate::println;
 use core::arch::asm;
 use core::ops::Add;
 use core::ptr::addr_of;
@@ -67,7 +67,6 @@ pub struct Selectors {
 
 pub fn init_gdt() {
     GDT.0.load();
-    dbg!(&GDT.0);
     let selectors = GDT.1.read();
     unsafe {
         CS::set_reg(selectors.kernel_code_selector);

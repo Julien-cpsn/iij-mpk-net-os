@@ -15,10 +15,9 @@ mod cpu;
 
 use crate::cpu::gdt::init_gdt;
 use crate::cpu::idt::init_idt;
-use crate::cpu::protection::pk::init_pk;
 use crate::drivers::acpi::init_acpi;
 use crate::drivers::pic::init_pic;
-use crate::memory::allocator::init_heap;
+use crate::memory::heap::init_heap;
 use crate::memory::tables::init_memory_mapping;
 use crate::utils::qemu::{exit_qemu, QemuExitCode};
 use bootloader_api::config::Mapping;
@@ -64,7 +63,7 @@ pub fn init_kernel(boot_info: &mut BootInfo) {
     init_heap(&boot_info.memory_regions);
 
     println!("PKU & PKS");
-    init_pk();
+    //init_pk();
 
     println!("ACPI");
     let rsdp = boot_info.rsdp_addr.take().expect("Failed to get RSDP address");

@@ -2,7 +2,7 @@ use std::env;
 use std::process::{exit, Command};
 
 
-const MEM_SIZE: &str = "4G";
+const MEM_SIZE: &str = "6G";
 
 fn main() {
     println!("{}", env!("BIOS_IMAGE"));
@@ -23,7 +23,8 @@ fn main() {
     qemu.arg("-cpu").arg("qemu64,+pku,+pks");
     qemu.arg("-machine").arg("q35");
     qemu.arg("-m").arg(MEM_SIZE);
-    //qemu.arg("--mem-prealloc");
+    qemu.arg("-enable-kvm");
+    qemu.arg("--mem-prealloc");
 
     qemu.arg("-drive").arg(format!("format=raw,file={}", env!("BIOS_IMAGE")));
 

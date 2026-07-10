@@ -1,4 +1,4 @@
-use crate::memory::tables::{translate_addr, PHYSICAL_MEMORY_OFFSET};
+use crate::memory::tables::{add_page_table_entry, translate_addr, PHYSICAL_MEMORY_OFFSET};
 use alloc::alloc::{alloc_zeroed, dealloc};
 use core::alloc::Layout;
 use core::ptr::NonNull;
@@ -32,6 +32,10 @@ unsafe impl Hal for HalImpl {
 
     unsafe fn mmio_phys_to_virt(paddr: VirtioPhysAddr, _size: usize) -> NonNull<u8> {
         let virt_addr = PHYSICAL_MEMORY_OFFSET.get().unwrap().as_u64() + paddr;
+
+        if translate_addr(VirtAddr::new(virt_addr)).is_none() {
+            add_page_table_entry(VirtAddr::new(virt_addr));
+        }
 
         //crate::println!("DMA MMIO phys to virt: {paddr:#X} -> {virt_addr:#X}");
 
