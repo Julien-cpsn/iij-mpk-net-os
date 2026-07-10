@@ -1,12 +1,13 @@
 use crate::apps::user::benchmark::benchmark;
-use core::hint::spin_loop;
+use crate::apps::user::syscalls::exit;
+use crate::utils::qemu::QemuExitCode;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn user_entry() -> ! {
     main();
-    loop {
-        spin_loop();
-    }
+    exit(QemuExitCode::Success);
+
+    loop {}
 }
 
 fn main() {

@@ -3,3 +3,4 @@ mod mprotect;
 mod print;
 mod pkru;
 mod cr3;
+mod exit;

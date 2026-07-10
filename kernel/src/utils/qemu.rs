@@ -1,11 +1,12 @@
 use goolog::{error, info};
+use strum_macros::FromRepr;
 use x86_64::instructions::nop;
 use x86_64::instructions::port::Port;
 
 
 const GOOLOG_TARGET: &str = "QEMU";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr)]
 #[repr(u32)]
 pub enum QemuExitCode {
     Success = 0x10,

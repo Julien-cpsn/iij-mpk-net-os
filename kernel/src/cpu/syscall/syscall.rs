@@ -2,6 +2,7 @@ use core::arch::naked_asm;
 use goolog::{trace, warn};
 use x86_64::structures::idt::InterruptStackFrame;
 use crate::cpu::syscall::cr3::update_cr3;
+use crate::cpu::syscall::exit::exit;
 use crate::cpu::syscall::mprotect::pkey_mprotect;
 use crate::cpu::syscall::pkru::{read_pkru_key, write_pkru_key};
 use crate::cpu::syscall::print::print;
@@ -76,11 +77,12 @@ extern "C" fn syscall_dispatch(regs: &mut SyscallRegs) {
     trace!("Syscall: {}", regs.rax);
 
     match regs.rax {
-        0 => print(regs),
-        10 => pkey_mprotect(regs),
-        11 => update_cr3(),
-        20 => read_pkru_key(regs),
-        21 => write_pkru_key(regs),
+        0 => exit(regs),
+        10 => print(regs),
+        20 => pkey_mprotect(regs),
+        21 => update_cr3(),
+        22 => read_pkru_key(regs),
+        23 => write_pkru_key(regs),
         _ => warn!("Unknown syscall {}", regs.rax),
     }
 }

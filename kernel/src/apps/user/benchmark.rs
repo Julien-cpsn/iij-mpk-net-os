@@ -1,8 +1,7 @@
 use crate::apps::user::syscalls::{update_cr3, write_pkru};
 use crate::cpu::protection::pk::PkPermission;
 use crate::println;
-use crate::utils::time::{now, now_ns};
-use smoltcp::time::Duration;
+use crate::utils::time::now_ns;
 use spin::Once;
 use x86_64::structures::paging::PhysFrame;
 
