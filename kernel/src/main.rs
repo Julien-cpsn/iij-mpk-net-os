@@ -87,8 +87,6 @@ pub fn init_kernel(boot_info: &mut BootInfo) {
 #[panic_handler]
 #[cfg(not(test))]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    const GOOLOG_TARGET: &str = "PANIC";
-
-    goolog::error!("PANIC: {info}");
+    kprintln!("PANIC: {info}");
     exit_qemu(QemuExitCode::Failed);
 }

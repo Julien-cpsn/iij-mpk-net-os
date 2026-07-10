@@ -21,7 +21,7 @@ fn main() {
     let mut qemu = Command::new("qemu-system-x86_64");
 
     qemu.arg("-cpu").arg("host,+pku");
-    qemu.arg("-machine").arg("q35");
+    qemu.arg("-machine").arg("q35,accel=kvm,hpet=on");
     qemu.arg("-m").arg(MEM_SIZE);
     qemu.arg("-enable-kvm");
     qemu.arg("--mem-prealloc");

@@ -23,7 +23,7 @@ macro_rules! kdbg {
         }
     };
     ($($val:expr),+ $(,)?) => {
-        ($($crate::dbg!($val)),+,)
+        ($($crate::kdbg!($val)),+,)
     };
 }
 
