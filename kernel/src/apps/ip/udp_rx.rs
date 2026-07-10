@@ -1,12 +1,15 @@
 use crate::apps::ip::utils::{create_sockets, SocketType};
-use crate::println;
 use crate::utils::compat::DeviceWrapper;
 use crate::utils::time::now;
 use alloc::vec;
 use alloc::vec::Vec;
+use goolog::{debug, info};
 use smoltcp::iface::{Interface, SocketHandle, SocketSet};
 use smoltcp::socket::raw;
 use virtio_drivers::transport::pci::PciTransport;
+
+
+const GOOLOG_TARGET: &str = "UDP RX";
 
 const SOCKET_NUMBER: u16 = 1;
 pub const RAW_PACKET_METADATA_BUFFER_SIZE: usize = 2;
@@ -18,7 +21,7 @@ pub fn udp_rx_server(mut device: DeviceWrapper<PciTransport>, mut iface: Interfa
     
     create_sockets(&mut sockets, &mut udp_handles, SocketType::Raw, SOCKET_NUMBER);
 
-    println!("===== UDP RX server started =====\n");
+    info!("===== UDP RX server started =====");
 
     loop {
         let timestamp = now();
@@ -29,7 +32,7 @@ pub fn udp_rx_server(mut device: DeviceWrapper<PciTransport>, mut iface: Interfa
 
             if socket.can_recv() {
                 if let Ok(_) = socket.recv() {
-                    println!("s{index} | packet");
+                    debug!("s{index} | packet");
                 }
             }
         }

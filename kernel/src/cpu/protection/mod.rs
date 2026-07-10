@@ -1,4 +1,5 @@
 pub mod pk;
-pub mod pkrs;
-pub mod pkru;
-pub mod mprotect;
+#[allow(unused)]
+pub(super) mod pkrs;
+pub(super) mod pkru;
+pub mod user_mode;

@@ -1,23 +1,23 @@
-use core::fmt;
 use crate::drivers::serial::SERIAL;
+use core::fmt;
 
 #[macro_export]
-macro_rules! println {
+macro_rules! kprintln {
     () => ($crate::utils::macros::_print(format_args!("\n")));
     ($($arg:tt)*) => ($crate::utils::macros::_print(format_args!("{}\n", format_args!($($arg)*))));
 }
 
 #[macro_export]
-macro_rules! print {
+macro_rules! kprint {
     ($($arg:tt)*) => ($crate::utils::macros::_print(format_args!($($arg)*)));
 }
 
 #[macro_export]
-macro_rules! dbg {
+macro_rules! kdbg {
     ($val:expr $(,)?) => {
         match $val {
             tmp => {
-                $crate::println!("{} = {:#?}", stringify!($val), &tmp as &dyn core::fmt::Debug);
+                $crate::kprintln!("{} = {:#?}", stringify!($val), &tmp as &dyn core::fmt::Debug);
                 tmp
             }
         }

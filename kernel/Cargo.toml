@@ -18,6 +18,8 @@ accessor = "0.3.3"
 strum_macros = "0.28.0"
 humansize = "2.1.3"
 aligned-vec = { version = "0.6.4", default-features = false}
+goolog = "0.11.0"
+log = "0.4.33"
 
 [dependencies.smoltcp]
 version = "0.13.1"

@@ -290,6 +290,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "goolog"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7d1391712dc3c4da36a8b18111f94ab18f14d5a786b25e7b64082198420e329"
+dependencies = [
+ "log",
+ "spin 0.9.8",
+]
+
+[[package]]
 name = "gpt"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -368,11 +378,13 @@ dependencies = [
  "acpi",
  "aligned-vec",
  "bootloader_api",
+ "goolog",
  "humansize",
  "linked_list_allocator",
+ "log",
  "pic8259",
  "smoltcp",
- "spin",
+ "spin 0.12.1",
  "strum_macros",
  "uart_16550",
  "virtio-drivers",
@@ -629,6 +641,15 @@ dependencies = [
  "defmt 0.3.100",
  "heapless",
  "managed",
+]
+
+[[package]]
+name = "spin"
+version = "0.9.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
+dependencies = [
+ "lock_api",
 ]
 
 [[package]]

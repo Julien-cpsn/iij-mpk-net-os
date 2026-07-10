@@ -1,4 +1,3 @@
-use crate::println;
 use crate::utils::compat::DeviceWrapper;
 use crate::utils::time::now;
 use alloc::borrow::ToOwned;
@@ -6,10 +5,15 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{format, vec};
 use core::str::FromStr;
+use goolog::debug;
+use log::info;
 use smoltcp::iface::{Interface, SocketHandle, SocketSet};
 use smoltcp::socket::tcp;
 use virtio_drivers::transport::pci::PciTransport;
 use crate::apps::ip::utils::{create_sockets, SocketType};
+
+
+const GOOLOG_TARGET: &str = "HTTP server";
 
 const PORT: u16 = 80;
 
@@ -23,7 +27,7 @@ pub fn http_server(mut device: DeviceWrapper<PciTransport>, mut iface: Interface
 
     let mut tcp_handles: Vec<(SocketHandle, bool)> = handles.drain(..).map(|s| (s, false)).collect();
 
-    println!("===== HTTP server started =====\n");
+    info!("===== HTTP server started =====");
 
     loop {
         let timestamp = now();
@@ -32,15 +36,15 @@ pub fn http_server(mut device: DeviceWrapper<PciTransport>, mut iface: Interface
         for (index, (tcp_handle, tcp_active)) in tcp_handles.iter_mut().enumerate() {
             let socket = sockets.get_mut::<tcp::Socket>(*tcp_handle);
             if !socket.is_open() {
-                println!("s{index} | listening");
+                debug!("s{index} | listening");
                 socket.listen(PORT).unwrap();
             }
 
             if socket.is_active() && tcp_active == &false {
-                println!("s{index} | connected");
+                debug!("s{index} | connected");
             }
             else if !socket.is_active() && tcp_active == &true {
-                println!("s{index} | disconnected");
+                debug!("s{index} | disconnected");
             }
 
             *tcp_active = socket.is_active();
@@ -56,7 +60,7 @@ pub fn http_server(mut device: DeviceWrapper<PciTransport>, mut iface: Interface
                 }
             }
             else if socket.may_send() {
-                println!("s{index} | close");
+                debug!("s{index} | close");
                 socket.close();
             }
         }

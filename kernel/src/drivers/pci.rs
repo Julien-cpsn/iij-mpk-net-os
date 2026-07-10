@@ -1,30 +1,33 @@
-use crate::println;
 use crate::apps::interface::init_interface;
 use crate::drivers::dma::HalImpl;
 use crate::drivers::mmio::{MemoryMapper, MMCONFIG_PHYS_BASE, MMCONFIG_SIZE};
 use accessor::Mapper;
+use goolog::{debug, error, info};
 use virtio_drivers::transport::pci::bus::{Cam, Command, MmioCam, PciRoot};
 use virtio_drivers::transport::pci::{virtio_device_type, PciTransport};
 use virtio_drivers::transport::DeviceType;
 
+const GOOLOG_TARGET: &str = "PCI";
+
 #[allow(unused)]
 pub fn enumerate_pci() {
-    println!("Starting PCI scan...");
+    info!("Starting scan...");
 
-    println!("\tMapping MMIO space...");
+    debug!("\tMapping MMIO space...");
     let mut mapper = MemoryMapper;
     let ecam = unsafe { mapper.map(MMCONFIG_PHYS_BASE.get().unwrap().as_u64() as usize, MMCONFIG_SIZE) };
-    println!("\tMMIO space mapped\n");
+    debug!("\tMMIO space mapped");
+    debug!("");
 
     let cam = unsafe { MmioCam::new(ecam.get() as *mut u8, Cam::Ecam) };
     let mut pci_root = PciRoot::new(cam);
 
     let mut virtio_net_pci_transport = None;
 
-    println!("\tDevices:");
+    info!("\tDevices:");
 
     for (df, info) in pci_root.enumerate_bus(0) {
-        println!("\t\t- Vendor: 0x{:4>0X}, Device: 0x{:4>0X}", info.vendor_id, info.device_id);
+        info!("\t\t- Vendor: 0x{:4>0X}, Device: 0x{:4>0X}", info.vendor_id, info.device_id);
 
         let Some(virtio_type) = virtio_device_type(&info) else {
             continue;
@@ -41,15 +44,17 @@ pub fn enumerate_pci() {
 
         pci_root.set_command(df, Command::IO_SPACE | Command::MEMORY_SPACE | Command::BUS_MASTER);
 
-        println!("\t\t\t^ Found virtio-net-pci NIC");
+        info!("\t\t\t^ Found virtio-net-pci NIC");
         virtio_net_pci_transport = Some(PciTransport::new::<HalImpl, _>(&mut pci_root, df).unwrap());
     }
-    println!("PCI scan complete!\n");
+    info!("PCI complete!");
+    info!("");
 
     if let Some(virtio_transport) = virtio_net_pci_transport {
         init_interface(virtio_transport);
     }
     else {
-        panic!("No virtio-net-pci card found");
+        error!("No virtio-net-pci card found");
+        panic!();
     }
 }

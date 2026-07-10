@@ -1,12 +1,12 @@
-use crate::println;
+use crate::kprintln;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::{InterruptStackFrame, PageFaultErrorCode};
-use crate::cpu::syscall::syscall_entry;
+use crate::memory::tables::find_page_table_entry;
 
 pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 
 pub extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
-    println!("EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
+    kprintln!("EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
 }
 
 pub extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame, _error_code: u64) -> ! {
@@ -14,22 +14,26 @@ pub extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFr
 }
 
 pub extern "x86-interrupt" fn page_fault_handler(stack_frame: InterruptStackFrame, error_code: PageFaultErrorCode) {
-    println!("EXCEPTION: PAGE FAULT");
-    println!("Accessed Address: {:?}", Cr2::read());
-    println!("Error Code: {:?}", error_code);
-    println!("{:?}", stack_frame);
+    kprintln!("EXCEPTION: PAGE FAULT");
+    kprintln!("Accessed Address: {:?}", Cr2::read());
+    kprintln!("Error Code: {:?}", error_code);
+    kprintln!("{:?}", stack_frame);
+
+    let rip = stack_frame.instruction_pointer;
+
+    if let Some((entry, size)) = find_page_table_entry(rip) {
+        kprintln!("RIP entry size = {}", size);
+        kprintln!("RIP entry flags = {:?}", entry.flags());
+    }
+    
     hlt_loop();
 }
 
 pub extern "x86-interrupt" fn general_protection_fault_handler(stack_frame: InterruptStackFrame, error_code: u64) {
-    println!("EXCEPTION: GENERAL PROTECTION");
-    println!("Error code: {}", error_code);
-    println!("{:#?}", stack_frame);
+    kprintln!("EXCEPTION: GENERAL PROTECTION");
+    kprintln!("Error code: {}", error_code);
+    kprintln!("{:#?}", stack_frame);
     hlt_loop();
-}
-
-pub extern "x86-interrupt" fn syscall_handler(_stack_frame: InterruptStackFrame) {
-    syscall_entry()
 }
 
 pub fn hlt_loop() -> ! {

@@ -2,12 +2,16 @@ use crate::apps::interface::NET_QUEUE_SIZE;
 use crate::drivers::dma::HalImpl;
 use alloc::rc::Rc;
 use core::cell::RefCell;
+use goolog::trace;
 use smoltcp::phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken};
 use smoltcp::time::Instant;
 use smoltcp::wire::EthernetAddress;
 use virtio_drivers::device::net::{RxBuffer, VirtIONet};
 use virtio_drivers::transport::Transport;
 use virtio_drivers::Error;
+
+
+const GOOLOG_TARGET: &str = "SMOLTCP";
 
 pub type DeviceImpl<T> = VirtIONet<HalImpl, T, { NET_QUEUE_SIZE }>;
 pub struct DeviceWrapper<T: Transport>(Rc<RefCell<DeviceImpl<T>>>);
@@ -56,7 +60,7 @@ impl<T: Transport> RxToken for VirtIoRxToken<T> {
     fn consume<R, F>(self, f: F) -> R where F: FnOnce(&[u8]) -> R {
         let mut rx_buf = self.1;
 
-        //crate::println!("RECV {} bytes: {:02X?}", rx_buf.packet_len(), rx_buf.packet());
+        trace!("RECV {} bytes: {:02X?}", rx_buf.packet_len(), rx_buf.packet());
 
         let result = f(rx_buf.packet_mut());
         self.0.borrow_mut().recycle_rx_buffer(rx_buf).unwrap();
@@ -71,7 +75,7 @@ impl<T: Transport> TxToken for VirtIoTxToken<T> {
         let mut tx_buf = dev.new_tx_buffer(len);
         let result = f(tx_buf.packet_mut());
 
-        //crate::println!("SEND {} bytes: {:02X?}", len, tx_buf.packet());
+        trace!("SEND {} bytes: {:02X?}", len, tx_buf.packet());
 
         dev.send(tx_buf).unwrap();
 

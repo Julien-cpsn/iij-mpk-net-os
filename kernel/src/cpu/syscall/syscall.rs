@@ -1,5 +1,12 @@
 use core::arch::naked_asm;
-use crate::println;
+use goolog::{trace, warn};
+use x86_64::structures::idt::InterruptStackFrame;
+use crate::cpu::syscall::cr3::update_cr3;
+use crate::cpu::syscall::mprotect::pkey_mprotect;
+use crate::cpu::syscall::pkru::{read_pkru_key, write_pkru_key};
+use crate::cpu::syscall::print::print;
+
+const GOOLOG_TARGET: &str = "SYSCALL";
 
 #[repr(C)]
 pub struct SyscallRegs {
@@ -21,7 +28,7 @@ pub struct SyscallRegs {
 }
 
 #[unsafe(naked)]
-pub extern "C" fn syscall_entry() {
+pub extern "C" fn syscall_entry(_interrupt_stack_frame: InterruptStackFrame) {
     naked_asm!(
         "
         push r15
@@ -65,21 +72,15 @@ pub extern "C" fn syscall_entry() {
     );
 }
 
-pub fn syscall_dispatch(regs: &mut SyscallRegs) {
+extern "C" fn syscall_dispatch(regs: &mut SyscallRegs) {
+    trace!("Syscall: {}", regs.rax);
+
     match regs.rax {
-        1 => {
-            let slice = unsafe {
-                core::slice::from_raw_parts(
-                    regs.rdi as *const u8,
-                    regs.rsi as usize,
-                )
-            };
-
-            if let Ok(s) = core::str::from_utf8(slice) {
-                println!("{}", s);
-            }
-        }
-
-        _ => println!("Unknown syscall {}", regs.rax),
+        0 => print(regs),
+        10 => pkey_mprotect(regs),
+        11 => update_cr3(),
+        20 => read_pkru_key(regs),
+        21 => write_pkru_key(regs),
+        _ => warn!("Unknown syscall {}", regs.rax),
     }
 }

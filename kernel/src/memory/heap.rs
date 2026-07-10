@@ -1,5 +1,5 @@
 use crate::memory::tables::{MEMORY_REGIONS, PHYSICAL_MEMORY_OFFSET};
-use crate::println;
+use crate::kprintln;
 use bootloader_api::info::{MemoryRegionKind, MemoryRegions};
 use humansize::{format_size, DECIMAL};
 use linked_list_allocator::LockedHeap;
@@ -7,13 +7,13 @@ use spin::Mutex;
 
 
 #[global_allocator]
-static ALLOCATOR: LockedHeap = LockedHeap::empty();
+pub static ALLOCATOR: LockedHeap = LockedHeap::empty();
 
 pub fn init_heap(memory_regions: &MemoryRegions) {
     let mut start = 0;
     let mut size = 0;
 
-    println!("\tMemory regions:");
+    kprintln!("\tMemory regions:");
 
     for memory_region in memory_regions.iter() {
         if matches!(memory_region.kind, MemoryRegionKind::Usable) {
@@ -34,7 +34,7 @@ pub fn init_heap(memory_regions: &MemoryRegions) {
     MEMORY_REGIONS.call_once(|| Mutex::new(memory_regions.to_vec()));
 
     for memory_region in memory_regions.iter() {
-        println!(
+        kprintln!(
             "\t\t{:?}: {:#X}..{:#X} ({})",
             memory_region.kind,
             memory_region.start,
@@ -43,5 +43,5 @@ pub fn init_heap(memory_regions: &MemoryRegions) {
         );
     }
 
-    println!("\tHeap size: {}", format_size(size, DECIMAL));
+    kprintln!("\tHeap size: {}", format_size(size, DECIMAL));
 }

@@ -1,10 +1,13 @@
 use alloc::vec;
 use alloc::vec::Vec;
+use goolog::info;
 use smoltcp::iface::{SocketHandle, SocketSet};
 use smoltcp::socket::{raw, tcp, udp};
 use crate::apps::ip::udp_rx::{RAW_PACKET_METADATA_BUFFER_SIZE, RAW_PACKET_PAYLOAD_BUFFER_SIZE};
 use crate::apps::ip::udp_tx::{UDP_PACKET_METADATA_BUFFER_SIZE, UDP_PACKET_PAYLOAD_BUFFER_SIZE};
-use crate::println;
+
+
+const GOOLOG_TARGET: &str = "IP UTILS";
 
 pub enum SocketType {
     Raw,
@@ -13,7 +16,7 @@ pub enum SocketType {
 }
 
 pub fn create_sockets(sockets: &mut SocketSet, handles: &mut Vec<SocketHandle>, socket_type: SocketType, number: u16) {
-    println!("Creating {number} sockets...");
+    info!("Creating {number} sockets...");
 
     for _ in 0..number {
         let handle = match socket_type {
@@ -34,7 +37,7 @@ pub fn create_sockets(sockets: &mut SocketSet, handles: &mut Vec<SocketHandle>, 
         handles.push(handle);
     }
 
-    println!("Sockets created!");
+    info!("Sockets created!");
 }
 
 fn create_raw_socket<'a>() -> raw::Socket<'a> {
