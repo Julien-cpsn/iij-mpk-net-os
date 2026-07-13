@@ -25,7 +25,7 @@ use crate::utils::qemu::{exit_qemu, QemuExitCode};
 use bootloader_api::config::Mapping;
 use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
 use x86_64::VirtAddr;
-
+use crate::utils::time::init_time;
 
 pub static BOOTLOADER_CONFIG: BootloaderConfig = {
     let mut config = BootloaderConfig::new_default();
@@ -52,6 +52,9 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 pub fn init_kernel(boot_info: &mut BootInfo) {
     kprintln!("Initializing kernel...");
 
+    kprintln!("TSC");
+    init_time();
+    
     kprintln!("GDT");
     init_gdt();
 
