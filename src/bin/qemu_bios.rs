@@ -3,6 +3,7 @@ use std::process::{exit, Command};
 
 
 const MEM_SIZE: &str = "6G";
+const FREQUENCY_GHZ: f32 = 2.6;
 
 fn main() {
     println!("{}", env!("BIOS_IMAGE"));
@@ -20,7 +21,7 @@ fn main() {
     #[cfg(not(feature = "dpdk-vhost"))]
     let mut qemu = Command::new("qemu-system-x86_64");
 
-    qemu.arg("-cpu").arg("host,+pku,+invtsc");
+    qemu.arg("-cpu").arg(format!("host,+pku,+invtsc,tsc-frequency={}", (FREQUENCY_GHZ * 1_000_000_000.0) as u64));
     qemu.arg("-machine").arg("q35,accel=kvm");
     qemu.arg("-m").arg(MEM_SIZE);
     qemu.arg("-enable-kvm");
