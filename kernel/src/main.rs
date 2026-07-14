@@ -1,31 +1,22 @@
 #![no_std]
 #![no_main]
-#![feature(abi_x86_interrupt)]
-#![feature(abi_unadjusted)]
-#![feature(link_llvm_intrinsics)]
-#![allow(internal_features)]
 
-extern crate alloc;
-
-mod utils;
-mod drivers;
-mod apps;
-mod memory;
-mod cpu;
-
-use crate::cpu::gdt::init_gdt;
-use crate::cpu::idt::init_idt;
-use crate::cpu::protection::pk::init_pk;
-use crate::drivers::acpi::init_acpi;
-use crate::drivers::pic::init_pic;
-use crate::memory::heap::init_heap;
-use crate::memory::tables::init_memory_mapping;
-use crate::utils::log::init_logger;
-use crate::utils::qemu::{exit_qemu, QemuExitCode};
+use kernel::cpu::gdt::init_gdt;
+use kernel::cpu::idt::init_idt;
+use kernel::cpu::protection::pk::init_pk;
+use kernel::cpu::protection::user_mode::init_user_mode;
+use kernel::drivers::acpi::init_acpi;
+use kernel::drivers::pic::init_pic;
+use kernel::memory::heap::init_heap;
+use kernel::memory::tables::init_memory_mapping;
+use kernel::utils::log::init_logger;
+use kernel::utils::qemu::{exit_qemu, QemuExitCode};
+use kernel::utils::time::init_time;
+use kernel::kprintln;
 use bootloader_api::config::Mapping;
 use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
 use x86_64::VirtAddr;
-use crate::utils::time::init_time;
+
 
 pub static BOOTLOADER_CONFIG: BootloaderConfig = {
     let mut config = BootloaderConfig::new_default();
@@ -41,10 +32,7 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     kprintln!();
 
     init_kernel(boot_info);
-
-    cpu::protection::user_mode::init_user_mode(boot_info);
-    //drivers::pci::enumerate_pci();
-    //apps::benchmark::benchmark();
+    init_user_mode(boot_info);
 
     exit_qemu(QemuExitCode::Success);
 }

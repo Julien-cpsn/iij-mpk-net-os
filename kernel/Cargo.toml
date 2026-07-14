@@ -14,7 +14,7 @@ pic8259 = "0.11.0"
 uart_16550 = "0.6.0"
 virtio-drivers = { version = "0.13.0" }
 
-spin = { version = "0.12.1", features = ["lazy"] }
+spin = { version = "0.12.2", features = ["lazy"] }
 accessor = "0.3.3"
 strum_macros = "0.28.0"
 humansize = "2.1.3"

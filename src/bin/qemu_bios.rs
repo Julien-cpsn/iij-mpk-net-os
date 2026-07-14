@@ -1,6 +1,8 @@
 use std::env;
 use std::process::{exit, Command};
 
+#[cfg(all(feature = "tap", feature = "dpdk-vhost"))]
+compile_error!("Cannot use both \"tap\" and \"dpdk-vhost\" features at the same time");
 
 const MEM_SIZE: &str = "6G";
 const FREQUENCY_GHZ: f32 = 2.6;
