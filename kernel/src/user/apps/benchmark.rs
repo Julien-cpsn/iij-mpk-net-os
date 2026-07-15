@@ -1,13 +1,10 @@
-use crate::apps::user::syscalls::{update_cr3, write_pkru};
 use crate::cpu::protection::pk::PkPermission;
 use crate::println;
+use crate::user::api::user_syscalls::{update_cr3, write_pkru};
 use crate::utils::time::now_ns;
-use spin::Once;
-use x86_64::structures::paging::PhysFrame;
 
-const GOOLOG_TARGET: &str = "BENCHMARK";
+const TARGET: &str = "BENCHMARK";
 
-pub static NEW_T4: Once<PhysFrame> = Once::new();
 
 pub fn benchmark() {
     const DURATION: u64 = 1_000_000_000;

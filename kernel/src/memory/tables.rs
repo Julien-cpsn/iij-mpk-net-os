@@ -1,21 +1,23 @@
-use crate::kprintln;
+use crate::{kprintln, ktrace};
 use alloc::vec::Vec;
 use core::mem::ManuallyDrop;
 use aligned_vec::avec;
 use bootloader_api::info::MemoryRegion;
-use goolog::trace;
 use spin::{Mutex, Once};
 use x86_64::registers::control::Cr3;
 use x86_64::structures::paging::page_table::{FrameError, PageTableEntry};
 use x86_64::structures::paging::{OffsetPageTable, PageSize, PageTable, PageTableFlags, PhysFrame, Size1GiB, Size2MiB, Size4KiB};
 use x86_64::{PhysAddr, VirtAddr};
-use crate::apps::user::benchmark::NEW_T4;
+use x86_64::instructions::tlb;
 
-const GOOLOG_TARGET: &str = "TABLES";
+const TARGET: &str = "TABLES";
 
 pub static PHYSICAL_MEMORY_OFFSET: Once<VirtAddr> = Once::new();
 pub static MAPPER: Once<OffsetPageTable<'static>> = Once::new();
 pub static MEMORY_REGIONS: Once<Mutex<Vec<MemoryRegion>>> = Once::new();
+
+// Benchmark purpose
+pub static NEW_T4: Once<PhysFrame> = Once::new();
 
 /// Initialize a new OffsetPageTable.
 ///
@@ -90,7 +92,7 @@ pub fn find_page_table_entry(addr: VirtAddr) -> Option<(&'static mut PageTableEn
     let table_indexes = [
         addr.p4_index(), addr.p3_index(), addr.p2_index(), addr.p1_index()
     ];
-    
+
     let mut frame = level_4_table_frame;
     let mut entry = None;
     let mut page_size = None;
@@ -126,14 +128,14 @@ pub fn find_page_table_entry(addr: VirtAddr) -> Option<(&'static mut PageTableEn
     Some((entry.unwrap(), page_size.unwrap()))
 }
 
-pub fn addr_frame_set_or_flags(addr: VirtAddr, flags: PageTableFlags, recursive: bool) -> Option<()> {
+pub fn add_flags_to_frame(virt_addr: VirtAddr, flags: PageTableFlags, recursive: bool) -> Option<()> {
     let physical_memory_offset = PHYSICAL_MEMORY_OFFSET.get().unwrap();
 
     // read the active level 4 frame from the CR3 register
     let (level_4_table_frame, _) = Cr3::read();
 
     let table_indexes = [
-        addr.p4_index(), addr.p3_index(), addr.p2_index(), addr.p1_index()
+        virt_addr.p4_index(), virt_addr.p3_index(), virt_addr.p2_index(), virt_addr.p1_index()
     ];
 
     let mut frame = level_4_table_frame;
@@ -159,19 +161,22 @@ pub fn addr_frame_set_or_flags(addr: VirtAddr, flags: PageTableFlags, recursive:
         };
     }
 
+    tlb::flush(virt_addr);
+
     Some(())
 }
 
-pub fn add_page_table_entry(addr: VirtAddr) {
-    trace!("Add page table entry: {:#X}", addr);
+pub fn add_page_table_entry(virt_addr: VirtAddr) {
+    ktrace!("Add page table entry: {:#X}", virt_addr);
 
     let physical_memory_offset = PHYSICAL_MEMORY_OFFSET.get().unwrap();
+    let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE | PageTableFlags::USER_ACCESSIBLE;
 
     // read the active level 4 frame from the CR3 register
     let (level_4_table_frame, _) = Cr3::read();
 
     let table_indexes = [
-        addr.p4_index(), addr.p3_index(), addr.p2_index(), addr.p1_index()
+        virt_addr.p4_index(), virt_addr.p3_index(), virt_addr.p2_index(), virt_addr.p1_index()
     ];
 
     let mut frame = level_4_table_frame;
@@ -188,32 +193,31 @@ pub fn add_page_table_entry(addr: VirtAddr) {
 
         frame = match entry.as_ref().unwrap().frame() {
             Ok(frame) => {
-                trace!("Frame: {:#X}", frame.start_address().as_u64());
+                //trace!("Frame: {:#X}", frame.start_address().as_u64());
                 frame
             },
             Err(FrameError::FrameNotPresent) => {
                 if t_index < 3 {
                     let manual_vec = ManuallyDrop::new(avec![[{ Size4KiB::SIZE as usize }]|0; Size4KiB::SIZE as usize]);
 
-                    //assert_eq!((&manual_vec).as_ptr() as usize % Size4KiB::SIZE as usize, 0);
-
                     let phys_addr = (&manual_vec).as_ptr() as u64 - physical_memory_offset.as_u64();
-                    entry.unwrap().set_addr(PhysAddr::new(phys_addr), PageTableFlags::PRESENT | PageTableFlags::WRITABLE);
+                    entry.unwrap().set_addr(PhysAddr::new(phys_addr), flags);
 
-                    trace!("New table entry: {t_index} {phys_addr:#X}");
+                    ktrace!("New table entry: {t_index} {phys_addr:#X}");
 
                     PhysFrame::from_start_address(PhysAddr::new(phys_addr)).expect("error")
-                } else {
-                    let phys_addr = addr.as_u64() - physical_memory_offset.as_u64();
+                }
+                else {
+                    let phys_addr = virt_addr.as_u64() - physical_memory_offset.as_u64();
 
-                    trace!("Addr: {phys_addr:#X}");
+                    ktrace!("Addr: {phys_addr:#X}");
 
-                    entry.unwrap().set_addr(PhysAddr::new(phys_addr), PageTableFlags::PRESENT | PageTableFlags::WRITABLE);
+                    entry.unwrap().set_addr(PhysAddr::new(phys_addr), flags);
                     break;
                 }
             },
             Err(FrameError::HugeFrame) => {
-                trace!("Huge frame");
+                ktrace!("Huge frame");
                 break;
             },
         };

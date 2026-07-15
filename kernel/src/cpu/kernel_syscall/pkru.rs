@@ -1,9 +1,9 @@
-use goolog::debug;
 use crate::cpu::protection::pk::{PkPermission, PK_MASK};
 use crate::cpu::protection::pkru::{read_pkru, write_pkru};
-use crate::cpu::syscall::syscall::SyscallRegs;
+use crate::cpu::kernel_syscall::syscall::SyscallRegs;
+use crate::kdebug;
 
-const GOOLOG_TARGET: &str = "PKRU";
+const TARGET: &str = "PKRU";
 
 pub fn read_pkru_key(regs: &SyscallRegs) {
     let pkey = regs.rdx as u8;
@@ -13,7 +13,7 @@ pub fn read_pkru_key(regs: &SyscallRegs) {
     let result = ((pkru >> (pkey * 2)) & PK_MASK) as u8;
     let permission = PkPermission::from_repr(result).unwrap();
 
-    debug!("PKRU key {} permission is {}", pkey, permission);
+    kdebug!("PKRU key {} permission is {}", pkey, permission);
 
     // return here
     //permission
@@ -26,7 +26,7 @@ pub fn write_pkru_key(regs: &SyscallRegs) {
     let shift = pkey * 2;
     let mask = PK_MASK << shift;
 
-    debug!("PKRU key {} permission set to {}", pkey, new_permission);
+    kdebug!("PKRU key {} permission set to {}", pkey, new_permission);
 
     let mut pkru = read_pkru();
     pkru &= !mask;

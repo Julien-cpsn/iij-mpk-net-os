@@ -1,25 +1,24 @@
-use crate::apps::interface::init_interface;
-use crate::drivers::dma::HalImpl;
-use crate::drivers::mmio::{MemoryMapper, MMCONFIG_PHYS_BASE, MMCONFIG_SIZE};
-use accessor::Mapper;
-use goolog::{debug, error, info};
+use crate::drivers::mmio::{MMCONFIG_PHYS_BASE, MMCONFIG_SIZE};
+use crate::user::apps::devices::compat::DeviceWrapper;
+use crate::user::apps::devices::dma::HalImpl;
+use crate::user::api::user_syscalls::allocate;
+use crate::user::apps::devices::nic::init_interface;
+use crate::{error, info, trace};
+use smoltcp::iface::Interface;
 use virtio_drivers::transport::pci::bus::{Cam, Command, MmioCam, PciRoot};
 use virtio_drivers::transport::pci::{virtio_device_type, PciTransport};
 use virtio_drivers::transport::DeviceType;
 
-const GOOLOG_TARGET: &str = "PCI";
+const TARGET: &str = "PCI";
 
-#[allow(unused)]
-pub fn enumerate_pci() {
+pub fn pci_scan() -> (DeviceWrapper<PciTransport>, Interface) {
     info!("Starting scan...");
 
-    debug!("\tMapping MMIO space...");
-    let mut mapper = MemoryMapper;
-    let ecam = unsafe { mapper.map(MMCONFIG_PHYS_BASE.get().unwrap().as_u64() as usize, MMCONFIG_SIZE) };
-    debug!("\tMMIO space mapped");
-    debug!("");
+    trace!("\tMapping MMIO space...");
+    let ecam = allocate(MMCONFIG_PHYS_BASE.get().unwrap(), MMCONFIG_SIZE);
+    trace!("\tMMIO space mapped");
 
-    let cam = unsafe { MmioCam::new(ecam.get() as *mut u8, Cam::Ecam) };
+    let cam = unsafe { MmioCam::new(ecam.as_mut_ptr(), Cam::Ecam) };
     let mut pci_root = PciRoot::new(cam);
 
     let mut virtio_net_pci_transport = None;
@@ -48,10 +47,9 @@ pub fn enumerate_pci() {
         virtio_net_pci_transport = Some(PciTransport::new::<HalImpl, _>(&mut pci_root, df).unwrap());
     }
     info!("PCI complete!");
-    info!("");
 
     if let Some(virtio_transport) = virtio_net_pci_transport {
-        init_interface(virtio_transport);
+        init_interface(virtio_transport)
     }
     else {
         error!("No virtio-net-pci card found");

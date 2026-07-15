@@ -1,28 +1,27 @@
-use crate::apps::interface::NET_QUEUE_SIZE;
-use crate::drivers::dma::HalImpl;
-use alloc::rc::Rc;
-use core::cell::RefCell;
-use goolog::trace;
+use crate::user::apps::devices::dma::HalImpl;
+use crate::user::apps::devices::nic::NET_QUEUE_SIZE;
+use crate::trace;
+use alloc::sync::Arc;
 use smoltcp::phy::{Device, DeviceCapabilities, Medium, RxToken, TxToken};
 use smoltcp::time::Instant;
 use smoltcp::wire::EthernetAddress;
+use spin::Mutex;
 use virtio_drivers::device::net::{RxBuffer, VirtIONet};
 use virtio_drivers::transport::Transport;
 use virtio_drivers::Error;
 
-
-const GOOLOG_TARGET: &str = "SMOLTCP";
+const TARGET: &str = "SMOLTCP";
 
 pub type DeviceImpl<T> = VirtIONet<HalImpl, T, { NET_QUEUE_SIZE }>;
-pub struct DeviceWrapper<T: Transport>(Rc<RefCell<DeviceImpl<T>>>);
+pub struct DeviceWrapper<T: Transport>(Arc<Mutex<DeviceImpl<T>>>);
 
 impl<T: Transport> DeviceWrapper<T> {
     pub fn new(dev: DeviceImpl<T>) -> Self {
-        DeviceWrapper(Rc::new(RefCell::new(dev)))
+        DeviceWrapper(Arc::new(Mutex::new(dev)))
     }
 
     pub fn mac_address(&self) -> EthernetAddress {
-        EthernetAddress(self.0.borrow().mac_address())
+        EthernetAddress(self.0.lock().mac_address())
     }
 }
 
@@ -31,7 +30,7 @@ impl<T: Transport> Device for DeviceWrapper<T> {
     type TxToken<'a> = VirtIoTxToken<T> where Self: 'a;
 
     fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
-        match self.0.borrow_mut().receive() {
+        match self.0.lock().receive() {
             Ok(buf) => Some((
                 VirtIoRxToken(self.0.clone(), buf),
                 VirtIoTxToken(self.0.clone()),
@@ -53,8 +52,8 @@ impl<T: Transport> Device for DeviceWrapper<T> {
     }
 }
 
-pub struct VirtIoRxToken<T: Transport>(Rc<RefCell<DeviceImpl<T>>>, RxBuffer);
-pub struct VirtIoTxToken<T: Transport>(Rc<RefCell<DeviceImpl<T>>>);
+pub struct VirtIoRxToken<T: Transport>(Arc<Mutex<DeviceImpl<T>>>, RxBuffer);
+pub struct VirtIoTxToken<T: Transport>(Arc<Mutex<DeviceImpl<T>>>);
 
 impl<T: Transport> RxToken for VirtIoRxToken<T> {
     fn consume<R, F>(self, f: F) -> R where F: FnOnce(&[u8]) -> R {
@@ -63,7 +62,7 @@ impl<T: Transport> RxToken for VirtIoRxToken<T> {
         trace!("RECV {} bytes: {:02X?}", rx_buf.packet_len(), rx_buf.packet());
 
         let result = f(rx_buf.packet_mut());
-        self.0.borrow_mut().recycle_rx_buffer(rx_buf).unwrap();
+        self.0.lock().recycle_rx_buffer(rx_buf).unwrap();
 
         result
     }
@@ -71,7 +70,7 @@ impl<T: Transport> RxToken for VirtIoRxToken<T> {
 
 impl<T: Transport> TxToken for VirtIoTxToken<T> {
     fn consume<R, F>(self, len: usize, f: F) -> R where F: FnOnce(&mut [u8]) -> R {
-        let mut dev = self.0.borrow_mut();
+        let mut dev = self.0.lock();
         let mut tx_buf = dev.new_tx_buffer(len);
         let result = f(tx_buf.packet_mut());
 

@@ -1,12 +1,11 @@
 use core::arch::x86_64::__cpuid_count;
-use goolog::trace;
 use strum_macros::{Display, FromRepr};
 use x86_64::registers::control::{Cr4, Cr4Flags};
 use x86_64::structures::paging::page_table::PageTableEntry;
 use x86_64::structures::paging::PageTableFlags;
+use crate::ktrace;
 
-
-const GOOLOG_TARGET: &str = "PK";
+const TARGET: &str = "PK";
 
 const PAGE_TABLE_ENTRY_PROTECTION_KEY_MASK: u64 = (1 << (62 + 1 - PKEY_SHIFT)) - 1;
 const PKEY_SHIFT: u64 = 59;
@@ -48,7 +47,7 @@ pub fn get_frame_protection_key(entry: &PageTableEntry) -> u8 {
 pub fn set_frame_protection_key(entry: &mut PageTableEntry, pkey: u8) {
     assert!(pkey < 16);
 
-    trace!("Entry at physical address {:#X}, key set to {}", entry.addr().as_u64(), pkey);
+    ktrace!("Entry at physical address {:#X}, key set to {}", entry.addr().as_u64(), pkey);
 
     let mut flags = entry.flags().bits();
     flags &= !PKEY_MASK;

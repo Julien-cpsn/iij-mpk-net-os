@@ -1,10 +1,9 @@
-use goolog::{error, info};
 use strum_macros::FromRepr;
 use x86_64::instructions::nop;
 use x86_64::instructions::port::Port;
+use crate::{kerror, kinfo};
 
-
-const GOOLOG_TARGET: &str = "QEMU";
+const TARGET: &str = "QEMU";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr)]
 #[repr(u32)]
@@ -15,8 +14,8 @@ pub enum QemuExitCode {
 
 pub fn exit_qemu(exit_code: QemuExitCode) -> ! {
     match exit_code {
-        QemuExitCode::Success => info!("Success, exiting..."),
-        QemuExitCode::Failed => error!("Failed, exiting..."),
+        QemuExitCode::Success => kinfo!("Success, exiting..."),
+        QemuExitCode::Failed => kerror!("Failed, exiting..."),
     }
 
     unsafe {

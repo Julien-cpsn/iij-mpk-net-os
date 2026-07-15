@@ -1,19 +1,18 @@
-use crate::utils::compat::DeviceWrapper;
+use crate::user::apps::devices::compat::DeviceWrapper;
 use crate::utils::time::now;
+use crate::user::apps::ip::utils::{create_sockets, SocketType};
+use crate::{debug, info};
 use alloc::borrow::ToOwned;
 use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{format, vec};
 use core::str::FromStr;
-use goolog::debug;
-use log::info;
 use smoltcp::iface::{Interface, SocketHandle, SocketSet};
 use smoltcp::socket::tcp;
 use virtio_drivers::transport::pci::PciTransport;
-use crate::apps::ip::utils::{create_sockets, SocketType};
 
 
-const GOOLOG_TARGET: &str = "HTTP server";
+const TARGET: &str = "HTTP server";
 
 const PORT: u16 = 80;
 

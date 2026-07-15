@@ -1,15 +1,15 @@
-use crate::apps::ip::utils::{create_sockets, SocketType};
-use crate::utils::compat::DeviceWrapper;
+use crate::user::apps::ip::utils::{create_sockets, SocketType};
+use crate::user::apps::devices::compat::DeviceWrapper;
 use crate::utils::time::now;
 use alloc::vec;
 use alloc::vec::Vec;
-use goolog::{debug, info};
+use crate::{debug, info};
 use smoltcp::iface::{Interface, SocketHandle, SocketSet};
 use smoltcp::socket::raw;
 use virtio_drivers::transport::pci::PciTransport;
 
 
-const GOOLOG_TARGET: &str = "UDP RX";
+const TARGET: &str = "UDP RX";
 
 const SOCKET_NUMBER: u16 = 1;
 pub const RAW_PACKET_METADATA_BUFFER_SIZE: usize = 2;

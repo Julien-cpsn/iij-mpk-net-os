@@ -1,5 +1,5 @@
 use core::slice::from_raw_parts;
-use crate::cpu::syscall::syscall::SyscallRegs;
+use crate::cpu::kernel_syscall::syscall::SyscallRegs;
 use crate::kprint;
 
 pub fn print(regs: &mut SyscallRegs) {

@@ -37,7 +37,7 @@ pub fn kvm_tsc_frequency() -> Option<u64> {
 pub fn init_time() {
     let freq = kvm_tsc_frequency().expect("KVM TSC frequency unavailable");
 
-    kprintln!("\tTSC frequency = {} Hz", freq);
+    kprintln!("\tFrequency: {} Hz", freq);
 
     TSC_HZ.store(freq, Ordering::Relaxed);
 }

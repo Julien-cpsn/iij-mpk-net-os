@@ -1,22 +1,20 @@
+use crate::cpu::gdt::GDT;
+use crate::memory::heap::ALLOCATOR;
+use crate::memory::tables::add_flags_to_frame;
+use crate::user::main::user_entry;
+use crate::kprintln;
+use bootloader_api::BootInfo;
 use core::arch::asm;
 use core::ops::Add;
 use core::ptr::addr_of;
-use bootloader_api::BootInfo;
-use goolog::info;
-use x86_64::registers::segmentation::SegmentSelector;
-use x86_64::{PrivilegeLevel, VirtAddr};
 use x86_64::instructions::tlb;
-use x86_64::structures::paging::PageTableFlags;
-use crate::apps::user::main::user_entry;
-use crate::cpu::gdt::GDT;
-use crate::kprintln;
-use crate::memory::heap::ALLOCATOR;
-use crate::memory::tables::addr_frame_set_or_flags;
+use x86_64::registers::segmentation::SegmentSelector;
+use x86_64::structures::paging::{PageSize, PageTableFlags, Size4KiB};
+use x86_64::{PrivilegeLevel, VirtAddr};
 
-const GOOLOG_TARGET: &str = "USER MODE";
 
 pub fn init_user_mode(boot_info: &BootInfo) {
-    info!("Entering user mode...");
+    kprintln!("Entering user mode...");
 
     let (user_cs, user_ss) = {
         let selectors = GDT.1.read();
@@ -43,13 +41,13 @@ pub fn init_user_mode(boot_info: &BootInfo) {
 
     // USER ENTRY
     {
-        addr_frame_set_or_flags(user_entry, PageTableFlags::USER_ACCESSIBLE, true);
+        add_flags_to_frame(user_entry, PageTableFlags::USER_ACCESSIBLE, true);
         tlb::flush(user_entry);
     }
 
     // USER STACK
     {
-        addr_frame_set_or_flags(user_stack - 1, PageTableFlags::USER_ACCESSIBLE, true);
+        add_flags_to_frame(user_stack - 1, PageTableFlags::USER_ACCESSIBLE, true);
         tlb::flush(user_stack - 1);
     }
 
@@ -62,10 +60,10 @@ pub fn init_user_mode(boot_info: &BootInfo) {
 
         while addr < end {
             let virt_addr = VirtAddr::new(addr);
-            addr_frame_set_or_flags(virt_addr, PageTableFlags::USER_ACCESSIBLE, true);
+            add_flags_to_frame(virt_addr, PageTableFlags::USER_ACCESSIBLE, true);
             tlb::flush(virt_addr);
 
-            addr += 4096;
+            addr += Size4KiB::SIZE;
         }
     }
 
@@ -81,14 +79,15 @@ pub fn init_user_mode(boot_info: &BootInfo) {
 
         while addr < end {
             let virt_addr = VirtAddr::new(addr);
-            addr_frame_set_or_flags(virt_addr, PageTableFlags::USER_ACCESSIBLE, true);
+            add_flags_to_frame(virt_addr, PageTableFlags::USER_ACCESSIBLE, true);
             tlb::flush(virt_addr);
 
-            addr += 4096;
+            addr += Size4KiB::SIZE;
         }
     }
 
-    info!("===== User mode entered =====");
+    kprintln!("User mode entered");
+    kprintln!("================================================================================");
     kprintln!();
 
     unsafe {

@@ -1,13 +1,13 @@
 use alloc::vec;
 use alloc::vec::Vec;
-use goolog::info;
+use crate::user::apps::ip::udp_tx::{UDP_PACKET_METADATA_BUFFER_SIZE, UDP_PACKET_PAYLOAD_BUFFER_SIZE};
+use crate::user::apps::ip::udp_rx::{RAW_PACKET_METADATA_BUFFER_SIZE, RAW_PACKET_PAYLOAD_BUFFER_SIZE};
+use crate::info;
 use smoltcp::iface::{SocketHandle, SocketSet};
 use smoltcp::socket::{raw, tcp, udp};
-use crate::apps::ip::udp_rx::{RAW_PACKET_METADATA_BUFFER_SIZE, RAW_PACKET_PAYLOAD_BUFFER_SIZE};
-use crate::apps::ip::udp_tx::{UDP_PACKET_METADATA_BUFFER_SIZE, UDP_PACKET_PAYLOAD_BUFFER_SIZE};
 
 
-const GOOLOG_TARGET: &str = "IP UTILS";
+const TARGET: &str = "IP UTILS";
 
 pub enum SocketType {
     Raw,

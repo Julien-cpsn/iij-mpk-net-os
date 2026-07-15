@@ -1,13 +1,16 @@
 use core::arch::naked_asm;
-use goolog::{trace, warn};
 use x86_64::structures::idt::InterruptStackFrame;
-use crate::cpu::syscall::cr3::update_cr3;
-use crate::cpu::syscall::exit::exit;
-use crate::cpu::syscall::mprotect::pkey_mprotect;
-use crate::cpu::syscall::pkru::{read_pkru_key, write_pkru_key};
-use crate::cpu::syscall::print::print;
+use crate::cpu::kernel_syscall::allocate::allocate;
+use crate::cpu::kernel_syscall::cr3::{read_cr3, update_cr3};
+use crate::cpu::kernel_syscall::exit::exit;
+use crate::cpu::kernel_syscall::log::log;
+use crate::cpu::kernel_syscall::mprotect::pkey_mprotect;
+use crate::cpu::kernel_syscall::pkru::{read_pkru_key, write_pkru_key};
+use crate::cpu::kernel_syscall::print::print;
+use crate::cpu::kernel_syscall::tables::{add_flags_to_frame, add_page_table_entry, translate_addr};
+use crate::kwarn;
 
-const GOOLOG_TARGET: &str = "SYSCALL";
+const TARGET: &str = "SYSCALL";
 
 #[repr(C)]
 pub struct SyscallRegs {
@@ -74,15 +77,30 @@ pub extern "C" fn syscall_entry(_interrupt_stack_frame: InterruptStackFrame) {
 }
 
 extern "C" fn syscall_dispatch(regs: &mut SyscallRegs) {
-    trace!("Syscall: {}", regs.rax);
+    //crate::ktrace!("Syscall: {}", regs.rax);
 
     match regs.rax {
+        // General purpose
         0 => exit(regs),
+
+        // Printing
         10 => print(regs),
-        20 => pkey_mprotect(regs),
+        11 => log(regs)
+        ,
+        // Cr3 / protection
+        20 => read_cr3(regs),
         21 => update_cr3(),
         22 => read_pkru_key(regs),
         23 => write_pkru_key(regs),
-        _ => warn!("Unknown syscall {}", regs.rax),
+        24 => pkey_mprotect(regs),
+
+        // Allocation
+        30 => allocate(regs),
+
+        // Tables
+        40 => translate_addr(regs),
+        41 => add_page_table_entry(regs),
+        42 => add_flags_to_frame(regs),
+        _ => kwarn!("Unknown syscall {}", regs.rax),
     }
 }

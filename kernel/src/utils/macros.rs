@@ -36,3 +36,28 @@ pub fn _print(args: fmt::Arguments) {
         SERIAL.lock().write_fmt(args).unwrap();
     });
 }
+
+#[macro_export]
+macro_rules! kerror {
+    ($($arg:tt)*) => (log::error!(target: TARGET, $($arg)*));
+}
+
+#[macro_export]
+macro_rules! kwarn {
+    ($($arg:tt)*) => (log::warn!(target: TARGET, $($arg)*));
+}
+
+#[macro_export]
+macro_rules! kinfo {
+    ($($arg:tt)*) => (log::info!(target: TARGET, $($arg)*));
+}
+
+#[macro_export]
+macro_rules! kdebug {
+    ($($arg:tt)*) => (log::debug!(target: TARGET, $($arg)*));
+}
+
+#[macro_export]
+macro_rules! ktrace {
+    ($($arg:tt)*) => (log::trace!(target: TARGET, $($arg)*));
+}

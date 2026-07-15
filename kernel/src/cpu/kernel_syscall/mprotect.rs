@@ -1,10 +1,10 @@
-use goolog::{debug};
 use crate::cpu::protection::pk::set_frame_protection_key;
 use crate::memory::tables::find_page_table_entry;
 use x86_64::VirtAddr;
-use crate::cpu::syscall::syscall::SyscallRegs;
+use crate::cpu::kernel_syscall::syscall::SyscallRegs;
+use crate::kdebug;
 
-const GOOLOG_TARGET: &str = "MPROTECT";
+const TARGET: &str = "MPROTECT";
 
 pub fn pkey_mprotect(regs: &SyscallRegs) {
     let virt_addr = VirtAddr::new(regs.rdi);
@@ -24,5 +24,5 @@ pub fn pkey_mprotect(regs: &SyscallRegs) {
         addr_offset += entry_size;
     }
     
-    debug!("Virt address {:#X} with {} bytes, key set to {}", virt_addr, length, pkey);
+    kdebug!("Virt address {:#X} with {} bytes, key set to {}", virt_addr, length, pkey);
 }

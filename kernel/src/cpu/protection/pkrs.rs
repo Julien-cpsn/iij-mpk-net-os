@@ -1,9 +1,8 @@
-use goolog::debug;
 use x86_64::registers::model_specific::Msr;
 use crate::cpu::protection::pk::{PkPermission, PK_MASK};
+use crate::kdebug;
 
-
-const GOOLOG_TARGET: &str = "PKRS";
+const TARGET: &str = "PKRS";
 
 const IA32_PKRS: u32 = 0x6E1;
 
@@ -13,7 +12,7 @@ pub fn read_pkrs_key(pkey: u8) -> PkPermission {
     let result = ((pkrs >> (pkey * 2)) & PK_MASK) as u8;
     let permission = PkPermission::from_repr(result).unwrap();
 
-    debug!("PKRS key {} permission is {}", pkey, permission);
+    kdebug!("PKRS key {} permission is {}", pkey, permission);
 
     permission
 }
@@ -22,7 +21,7 @@ pub fn write_pkrs_key(pkey: u8, new_permission: PkPermission) {
     let shift = pkey * 2;
     let mask = PK_MASK << shift;
 
-    debug!("PKRS key {} permission set to {}", pkey, new_permission);
+    kdebug!("PKRS key {} permission set to {}", pkey, new_permission);
 
     let mut pkru = read_pkrs();
     pkru &= !mask;

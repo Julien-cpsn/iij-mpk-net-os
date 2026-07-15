@@ -2,7 +2,7 @@ use crate::cpu::interrupt::{breakpoint_handler, double_fault_handler, general_pr
 use spin::{LazyLock, Mutex};
 use x86_64::structures::idt::InterruptDescriptorTable;
 use x86_64::{PrivilegeLevel, VirtAddr};
-use crate::cpu::syscall::syscall::syscall_entry;
+use crate::cpu::kernel_syscall::syscall::syscall_entry;
 
 const SYSCALL_VECTOR: u8 = 0x80;
 

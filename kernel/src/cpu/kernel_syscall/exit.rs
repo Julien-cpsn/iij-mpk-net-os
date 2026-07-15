@@ -1,4 +1,4 @@
-use crate::cpu::syscall::syscall::SyscallRegs;
+use crate::cpu::kernel_syscall::syscall::SyscallRegs;
 use crate::utils::qemu::{exit_qemu, QemuExitCode};
 
 pub fn exit(regs: &SyscallRegs) {

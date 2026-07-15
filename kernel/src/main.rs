@@ -1,20 +1,20 @@
 #![no_std]
 #![no_main]
 
+use bootloader_api::config::Mapping;
+use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
 use kernel::cpu::gdt::init_gdt;
 use kernel::cpu::idt::init_idt;
 use kernel::cpu::protection::pk::init_pk;
 use kernel::cpu::protection::user_mode::init_user_mode;
 use kernel::drivers::acpi::init_acpi;
 use kernel::drivers::pic::init_pic;
+use kernel::kprintln;
 use kernel::memory::heap::init_heap;
 use kernel::memory::tables::init_memory_mapping;
 use kernel::utils::log::init_logger;
 use kernel::utils::qemu::{exit_qemu, QemuExitCode};
 use kernel::utils::time::init_time;
-use kernel::kprintln;
-use bootloader_api::config::Mapping;
-use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
 use x86_64::VirtAddr;
 
 

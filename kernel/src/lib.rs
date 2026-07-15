@@ -9,6 +9,6 @@ extern crate alloc;
 
 pub mod utils;
 pub mod drivers;
-pub mod apps;
+pub mod user;
 pub mod memory;
 pub mod cpu;
