@@ -15,7 +15,7 @@ pub fn pci_scan() -> (DeviceWrapper<PciTransport>, Interface) {
     info!("Starting scan...");
 
     trace!("\tMapping MMIO space...");
-    let ecam = allocate(MMCONFIG_PHYS_BASE.get().unwrap(), MMCONFIG_SIZE);
+    let ecam = allocate(Some(MMCONFIG_PHYS_BASE.get().unwrap().clone()), MMCONFIG_SIZE);
     trace!("\tMMIO space mapped");
 
     let cam = unsafe { MmioCam::new(ecam.as_mut_ptr(), Cam::Ecam) };

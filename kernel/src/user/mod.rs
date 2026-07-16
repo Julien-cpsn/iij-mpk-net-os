@@ -1,4 +1,5 @@
 pub mod main;
-mod api;
+pub mod api;
 mod apps;
 mod c_api;
+mod multithreading;

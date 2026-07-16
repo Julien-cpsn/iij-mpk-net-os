@@ -1,12 +1,14 @@
 #![no_std]
 #![no_main]
 
+extern crate alloc;
+
 use bootloader_api::config::Mapping;
 use bootloader_api::{entry_point, BootInfo, BootloaderConfig};
 use kernel::cpu::gdt::init_gdt;
 use kernel::cpu::idt::init_idt;
 use kernel::cpu::protection::pk::init_pk;
-use kernel::cpu::protection::user_mode::init_user_mode;
+use kernel::cpu::protection::user_mode::{init_user_mode, is_in_usermode};
 use kernel::drivers::acpi::init_acpi;
 use kernel::drivers::pic::init_pic;
 use kernel::kprintln;
@@ -16,7 +18,6 @@ use kernel::utils::log::init_logger;
 use kernel::utils::qemu::{exit_qemu, QemuExitCode};
 use kernel::utils::time::init_time;
 use x86_64::VirtAddr;
-
 
 pub static BOOTLOADER_CONFIG: BootloaderConfig = {
     let mut config = BootloaderConfig::new_default();
@@ -69,7 +70,7 @@ pub fn init_kernel(boot_info: &mut BootInfo) {
     kprintln!("Interrupts");
     //x86_64::instructions::interrupts::enable();
 
-    kprintln!("Init logger");
+    kprintln!("Logger");
     init_logger();
 
     kprintln!("Kernel initialized!\n");
@@ -78,6 +79,18 @@ pub fn init_kernel(boot_info: &mut BootInfo) {
 #[panic_handler]
 #[cfg(not(test))]
 fn panic(info: &core::panic::PanicInfo) -> ! {
-    kprintln!("PANIC: {info}");
-    exit_qemu(QemuExitCode::Failed);
+    let frames = kernel::cpu::stack_trace::get_stacktrace();
+
+    if is_in_usermode() {
+        let text = alloc::format!("PANIC: {info}\n");
+        kernel::user::api::user_syscalls::print(text.as_ptr(), text.len());
+        let text = alloc::format!("STACK TRACE: {frames}\n");
+        kernel::user::api::user_syscalls::print(text.as_ptr(), text.len());
+        kernel::user::api::user_syscalls::exit(QemuExitCode::Failed);
+        loop {}
+    } else {
+        kprintln!("PANIC: {info}");
+        kprintln!("STACK TRACE: {frames}");
+        exit_qemu(QemuExitCode::Failed);
+    }
 }

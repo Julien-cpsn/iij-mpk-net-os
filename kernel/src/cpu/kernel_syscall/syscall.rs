@@ -77,16 +77,20 @@ pub extern "C" fn syscall_entry(_interrupt_stack_frame: InterruptStackFrame) {
 }
 
 extern "C" fn syscall_dispatch(regs: &mut SyscallRegs) {
-    //crate::ktrace!("Syscall: {}", regs.rax);
+    let syscall_id = regs.rax;
 
-    match regs.rax {
+    if syscall_id != 11 && syscall_id != 10 {
+        crate::ktrace!("Syscall: {syscall_id}");
+    }
+
+    match syscall_id {
         // General purpose
         0 => exit(regs),
 
         // Printing
         10 => print(regs),
-        11 => log(regs)
-        ,
+        11 => log(regs),
+
         // Cr3 / protection
         20 => read_cr3(regs),
         21 => update_cr3(),
@@ -101,6 +105,7 @@ extern "C" fn syscall_dispatch(regs: &mut SyscallRegs) {
         40 => translate_addr(regs),
         41 => add_page_table_entry(regs),
         42 => add_flags_to_frame(regs),
+
         _ => kwarn!("Unknown syscall {}", regs.rax),
     }
 }

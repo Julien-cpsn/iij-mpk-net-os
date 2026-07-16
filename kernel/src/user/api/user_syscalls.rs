@@ -1,8 +1,8 @@
-use core::arch::asm;
-use x86_64::{PhysAddr, VirtAddr};
-use x86_64::structures::paging::{PageTableFlags, PhysFrame};
 use crate::cpu::protection::pk::PkPermission;
 use crate::utils::qemu::QemuExitCode;
+use core::arch::asm;
+use x86_64::structures::paging::{PageTableFlags, PhysFrame};
+use x86_64::{PhysAddr, VirtAddr};
 
 #[inline(always)]
 pub fn exit(exit_code: QemuExitCode) {
@@ -10,7 +10,7 @@ pub fn exit(exit_code: QemuExitCode) {
         asm!(
             "int 0x80",
             in("rax") 0usize,
-            in("rdi") exit_code as u32 as u64,
+            in("rdi") exit_code as u64,
             options(nostack, preserves_flags),
         );
     }
@@ -111,14 +111,14 @@ pub fn pkey_mprotect(virt_addr: VirtAddr, length: usize, pkey: u8) {
 }
 
 #[inline(always)]
-pub fn allocate(address: &PhysAddr, size: usize) -> VirtAddr {
+pub fn allocate(address: Option<PhysAddr>, size: usize) -> VirtAddr {
     let mut ret: u64 = 30;
 
     unsafe {
         asm!(
         "int 0x80",
         inlateout("rax") ret,
-        in("rdi") address.as_u64(),
+        in("rdi") address.unwrap_or(PhysAddr::zero()).as_u64(),
         in("rsi") size as u64,
         options(nostack, preserves_flags),
         );

@@ -1,7 +1,7 @@
 use crate::memory::tables::PHYSICAL_MEMORY_OFFSET;
+use crate::user::api::user_syscalls::{add_flags_to_frame, add_page_table_entry, allocate, translate_addr};
 use crate::trace;
-use crate::user::api::user_syscalls::{add_flags_to_frame, add_page_table_entry, translate_addr};
-use alloc::alloc::{alloc_zeroed, dealloc};
+use alloc::alloc::dealloc;
 use core::alloc::Layout;
 use core::ptr::NonNull;
 use virtio_drivers::{BufferDirection, Hal, PhysAddr as VirtioPhysAddr};
@@ -18,15 +18,13 @@ unsafe impl Hal for HalImpl {
 
         let allocation_size = pages * Size4KiB::SIZE as usize;
 
-        let allocated_space = unsafe { alloc_zeroed(Layout::array::<u8>(allocation_size).unwrap()) };
-
-        let virt_addr = VirtAddr::from_ptr(allocated_space);
-        let phys_addr = translate_addr(virt_addr).unwrap();
+        let virt_addr = allocate(None, allocation_size);
         add_flags_to_frame(virt_addr, PageTableFlags::USER_ACCESSIBLE, true);
+        let phys_addr = translate_addr(virt_addr).unwrap();
 
-        trace!("Allocation: phys {:#X}, virt {:#X}, {} bytes", phys_addr, allocated_space.addr(), allocation_size);
+        trace!("Allocation: phys {:#X}, virt {:#X}, {} bytes", phys_addr, virt_addr.as_u64(), allocation_size);
 
-        (phys_addr.as_u64(), NonNull::new(allocated_space).unwrap())
+        (phys_addr.as_u64(), NonNull::new(virt_addr.as_mut_ptr()).unwrap())
     }
 
     unsafe fn dma_dealloc(phys_addr: VirtioPhysAddr, vaddr: NonNull<u8>, pages: usize) -> i32 {
@@ -54,7 +52,7 @@ unsafe impl Hal for HalImpl {
         }
 
         trace!("Phys to virt: {paddr:#X} -> {virt_addr:#X}, {size} bytes");
-        
+
         NonNull::new(addr as *mut u8).unwrap()
     }
 

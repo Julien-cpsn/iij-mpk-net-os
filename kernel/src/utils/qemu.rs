@@ -6,7 +6,7 @@ use crate::{kerror, kinfo};
 const TARGET: &str = "QEMU";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr)]
-#[repr(u32)]
+#[repr(u64)]
 pub enum QemuExitCode {
     Success = 0x10,
     Failed = 0x11,

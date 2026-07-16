@@ -11,7 +11,11 @@ use x86_64::instructions::tlb;
 use x86_64::registers::segmentation::SegmentSelector;
 use x86_64::structures::paging::{PageSize, PageTableFlags, Size4KiB};
 use x86_64::{PrivilegeLevel, VirtAddr};
+use x86_64::instructions::segmentation::{Segment, CS};
 
+pub fn is_in_usermode() -> bool {
+    CS::get_reg().0 & 0b11 == 3
+}
 
 pub fn init_user_mode(boot_info: &BootInfo) {
     kprintln!("Entering user mode...");
@@ -48,7 +52,6 @@ pub fn init_user_mode(boot_info: &BootInfo) {
     // USER STACK
     {
         add_flags_to_frame(user_stack - 1, PageTableFlags::USER_ACCESSIBLE, true);
-        tlb::flush(user_stack - 1);
     }
 
     // KERNEL
@@ -61,7 +64,6 @@ pub fn init_user_mode(boot_info: &BootInfo) {
         while addr < end {
             let virt_addr = VirtAddr::new(addr);
             add_flags_to_frame(virt_addr, PageTableFlags::USER_ACCESSIBLE, true);
-            tlb::flush(virt_addr);
 
             addr += Size4KiB::SIZE;
         }
@@ -80,7 +82,6 @@ pub fn init_user_mode(boot_info: &BootInfo) {
         while addr < end {
             let virt_addr = VirtAddr::new(addr);
             add_flags_to_frame(virt_addr, PageTableFlags::USER_ACCESSIBLE, true);
-            tlb::flush(virt_addr);
 
             addr += Size4KiB::SIZE;
         }

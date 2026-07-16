@@ -3,6 +3,7 @@
 #![feature(abi_x86_interrupt)]
 #![feature(abi_unadjusted)]
 #![feature(link_llvm_intrinsics)]
+#![feature(ptr_alignment_type)]
 #![allow(internal_features)]
 
 extern crate alloc;
