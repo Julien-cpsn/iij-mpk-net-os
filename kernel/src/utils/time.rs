@@ -1,7 +1,7 @@
 use crate::kprintln;
 use core::arch::x86_64::{__cpuid, _rdtsc};
 use core::sync::atomic::{AtomicU64, Ordering};
-use smoltcp::time::Instant;
+use smoltcp::time::{Duration, Instant};
 
 
 static TSC_HZ: AtomicU64 = AtomicU64::new(0);
@@ -40,4 +40,10 @@ pub fn init_time() {
     kprintln!("\tFrequency: {} Hz", freq);
 
     TSC_HZ.store(freq, Ordering::Relaxed);
+}
+
+pub fn sleep_ms(ms: u64) {
+    let start = now();
+
+    while (now() - start) < Duration::from_millis(ms) {}
 }

@@ -1,58 +1,46 @@
-use crate::drivers::mmio::{MMCONFIG_PHYS_BASE, MMCONFIG_SIZE};
-use crate::user::apps::devices::compat::DeviceWrapper;
-use crate::user::apps::devices::dma::HalImpl;
-use crate::user::api::user_syscalls::allocate;
-use crate::user::apps::devices::nic::init_interface;
+use crate::user::apps::devices::virtio_net::net::{VirtioNetPci, VirtioNetQueue};
+use crate::user::apps::devices::virtio_net::pci::{Ecam, VIRTIO_NET_DEVICE_ID_MODERN, VIRTIO_NET_DEVICE_ID_TRANSITIONAL, VIRTIO_VENDOR_ID};
 use crate::{error, info, trace};
-use smoltcp::iface::Interface;
-use virtio_drivers::transport::pci::bus::{Cam, Command, MmioCam, PciRoot};
-use virtio_drivers::transport::pci::{virtio_device_type, PciTransport};
-use virtio_drivers::transport::DeviceType;
 
 const TARGET: &str = "PCI";
 
-pub fn pci_scan() -> (DeviceWrapper<PciTransport>, Interface) {
+const NUM_QUEUE_PAIRS: u16 = 1;
+
+pub fn pci_scan() -> VirtioNetQueue {
     info!("Starting scan...");
 
     trace!("\tMapping MMIO space...");
-    let ecam = allocate(Some(MMCONFIG_PHYS_BASE.get().unwrap().clone()), MMCONFIG_SIZE);
+    let ecam = Ecam::new();
     trace!("\tMMIO space mapped");
 
-    let cam = unsafe { MmioCam::new(ecam.as_mut_ptr(), Cam::Ecam) };
-    let mut pci_root = PciRoot::new(cam);
 
     let mut virtio_net_pci_transport = None;
 
     info!("\tDevices:");
 
-    for (df, info) in pci_root.enumerate_bus(0) {
-        info!("\t\t- Vendor: 0x{:4>0X}, Device: 0x{:4>0X}", info.vendor_id, info.device_id);
+    for (bdf, vendor, device) in ecam.enumerate_bus0() {
+        info!("\t\t- Vendor: 0x{:4>0X}, Device: 0x{:4>0X}", vendor, device);
 
-        let Some(virtio_type) = virtio_device_type(&info) else {
-            continue;
-        };
-
-        if !matches!(virtio_type, DeviceType::Network) {
+        if vendor != VIRTIO_VENDOR_ID {
             continue;
         }
-
-        // If not QEMU virtio-net-pci
-        if info.vendor_id != 0x1AF4 && info.device_id != 0x1000 {
+        if device != VIRTIO_NET_DEVICE_ID_TRANSITIONAL && device != VIRTIO_NET_DEVICE_ID_MODERN {
             continue;
         }
-
-        pci_root.set_command(df, Command::IO_SPACE | Command::MEMORY_SPACE | Command::BUS_MASTER);
 
         info!("\t\t\t^ Found virtio-net-pci NIC");
-        virtio_net_pci_transport = Some(PciTransport::new::<HalImpl, _>(&mut pci_root, df).unwrap());
+
+        virtio_net_pci_transport = Some(bdf);
     }
     info!("PCI complete!");
 
-    if let Some(virtio_transport) = virtio_net_pci_transport {
-        init_interface(virtio_transport)
-    }
-    else {
+    let Some(bdf) = virtio_net_pci_transport else {
         error!("No virtio-net-pci card found");
         panic!();
-    }
+    };
+
+    let mut dev = VirtioNetPci::init(&ecam, bdf, NUM_QUEUE_PAIRS);
+    info!("Device initialized");
+    let queue = dev.take_queue(0);
+    queue
 }

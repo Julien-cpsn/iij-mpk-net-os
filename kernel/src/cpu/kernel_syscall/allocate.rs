@@ -1,11 +1,11 @@
-use alloc::alloc::alloc_zeroed;
-use core::alloc::Layout;
-use core::mem::Alignment;
 use crate::cpu::kernel_syscall::syscall::SyscallRegs;
 use crate::drivers::mmio::MemoryMapper;
 use accessor::Mapper;
-use x86_64::structures::paging::{PageSize, Size4KiB};
+use alloc::alloc::alloc_zeroed;
+use core::alloc::Layout;
+use core::mem::Alignment;
 use x86_64::VirtAddr;
+use x86_64::structures::paging::{PageSize, Size4KiB};
 
 pub fn allocate(regs: &mut SyscallRegs) {
     let size = regs.rsi as usize;
@@ -28,7 +28,6 @@ pub fn allocate(regs: &mut SyscallRegs) {
             VirtAddr::new(virt_addr.get() as u64)
         }
     };
-
 
     regs.rax = virt_addr.as_u64();
 }

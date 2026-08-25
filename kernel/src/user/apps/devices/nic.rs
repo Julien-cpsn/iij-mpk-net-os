@@ -15,7 +15,7 @@ const TARGET: &str = "NIC";
 pub const IP: LazyLock<Ipv4Address> = LazyLock::new(|| Ipv4Address::from_str("192.168.179.2").unwrap());
 pub const GATEWAY: LazyLock<Ipv4Address> = LazyLock::new(|| Ipv4Address::from_str("192.168.179.1").unwrap());
 const NET_BUFFER_LEN: usize = 2048;
-pub const NET_QUEUE_SIZE: usize = 2;
+pub const NET_QUEUE_SIZE: usize = 512;
 
 pub fn init_interface(transport: PciTransport) -> (DeviceWrapper<PciTransport>, Interface) {
     info!("Initializing virtio-net-pci interface...");

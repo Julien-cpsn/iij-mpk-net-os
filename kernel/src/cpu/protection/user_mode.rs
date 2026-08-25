@@ -1,17 +1,22 @@
 use crate::cpu::gdt::GDT;
+use crate::kprintln;
 use crate::memory::heap::ALLOCATOR;
 use crate::memory::tables::add_flags_to_frame;
 use crate::user::main::user_entry;
-use crate::kprintln;
+use alloc::vec;
+use alloc::vec::Vec;
 use bootloader_api::BootInfo;
 use core::arch::asm;
-use core::ops::Add;
-use core::ptr::addr_of;
-use x86_64::instructions::tlb;
+use core::ops::{Add, Deref};
+use spin::LazyLock;
+use x86_64::instructions::segmentation::{CS, Segment};
 use x86_64::registers::segmentation::SegmentSelector;
 use x86_64::structures::paging::{PageSize, PageTableFlags, Size4KiB};
 use x86_64::{PrivilegeLevel, VirtAddr};
-use x86_64::instructions::segmentation::{Segment, CS};
+
+const USER_STACK_SIZE: usize = 4096 * 5000;
+
+pub static USER_STACK: LazyLock<Vec<u8>> = LazyLock::new(|| vec![0; USER_STACK_SIZE]);
 
 pub fn is_in_usermode() -> bool {
     CS::get_reg().0 & 0b11 == 3
@@ -36,22 +41,17 @@ pub fn init_user_mode(boot_info: &BootInfo) {
         (user_cs, user_ss)
     };
 
-
-    const USER_STACK_SIZE: usize = 4096 * 4;
-    static mut USER_STACK: [u8; USER_STACK_SIZE] = [0; USER_STACK_SIZE];
-
     let user_entry = VirtAddr::from_ptr(user_entry as *const ());
-    let user_stack = VirtAddr::from_ptr(addr_of!(USER_STACK)).add(USER_STACK_SIZE as u64);
+    let user_stack = VirtAddr::from_ptr(USER_STACK.deref().as_ptr()).add(USER_STACK_SIZE as u64);
 
     // USER ENTRY
     {
-        add_flags_to_frame(user_entry, PageTableFlags::USER_ACCESSIBLE, true);
-        tlb::flush(user_entry);
+        add_flags_to_frame(user_entry, PageTableFlags::USER_ACCESSIBLE | PageTableFlags::PRESENT, true);
     }
 
     // USER STACK
     {
-        add_flags_to_frame(user_stack - 1, PageTableFlags::USER_ACCESSIBLE, true);
+        add_flags_to_frame(user_stack - 1, PageTableFlags::USER_ACCESSIBLE | PageTableFlags::PRESENT | PageTableFlags::WRITABLE, true);
     }
 
     // KERNEL

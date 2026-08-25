@@ -19,8 +19,8 @@ unsafe impl Hal for HalImpl {
         let allocation_size = pages * Size4KiB::SIZE as usize;
 
         let virt_addr = allocate(None, allocation_size);
-        add_flags_to_frame(virt_addr, PageTableFlags::USER_ACCESSIBLE, true);
         let phys_addr = translate_addr(virt_addr).unwrap();
+        add_flags_to_frame(virt_addr, PageTableFlags::USER_ACCESSIBLE, true);
 
         trace!("Allocation: phys {:#X}, virt {:#X}, {} bytes", phys_addr, virt_addr.as_u64(), allocation_size);
 

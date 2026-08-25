@@ -30,8 +30,8 @@ fn main() {
     };
     let task_1 = test();
     let task_2 = async {
-        let (mut device, mut iface) = pci_scan();
-        udp_tx_server(&mut device, &mut iface);
+        let mut device = pci_scan();
+        udp_tx_server(&mut device);
     };
 
     spawn(task_0);

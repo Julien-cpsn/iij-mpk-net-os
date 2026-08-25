@@ -13,7 +13,7 @@ use virtio_drivers::Error;
 const TARGET: &str = "SMOLTCP";
 
 pub type DeviceImpl<T> = VirtIONet<HalImpl, T, { NET_QUEUE_SIZE }>;
-pub struct DeviceWrapper<T: Transport>(Arc<Mutex<DeviceImpl<T>>>);
+pub struct DeviceWrapper<T: Transport>(pub Arc<Mutex<DeviceImpl<T>>>);
 
 impl<T: Transport> DeviceWrapper<T> {
     pub fn new(dev: DeviceImpl<T>) -> Self {

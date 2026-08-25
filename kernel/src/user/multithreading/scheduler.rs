@@ -5,7 +5,7 @@ use alloc::task::Wake;
 use core::task::{Context, Poll, Waker};
 use crossbeam_queue::ArrayQueue;
 use spin::{Mutex, Once};
-use crate::info;
+use crate::{info, println};
 
 
 const TARGET: &str = "SCHEDULER";
@@ -65,9 +65,8 @@ impl Executor {
         } = self;
 
         while let Some(task_id) = task_queue.pop() {
-            let task = match tasks.get_mut(&task_id) {
-                Some(task) => task,
-                None => continue, // task no longer exists
+            let Some(task) = tasks.get_mut(&task_id) else {
+                continue; // task no longer exists
             };
 
             let waker = waker_cache
@@ -80,13 +79,16 @@ impl Executor {
                     // task done -> remove it and its cached waker
                     tasks.remove(&task_id);
                     waker_cache.remove(&task_id);
+                },
+                Poll::Pending => {
+                    println!("PENDING")
                 }
-                Poll::Pending => {}
             }
         }
     }
 
     fn sleep_if_idle(&self) {
+        println!("HALT");
         if self.task_queue.is_empty() {
             x86_64::instructions::hlt();
         }

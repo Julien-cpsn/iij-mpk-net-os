@@ -45,7 +45,7 @@ pub fn without_logging<T>(f: impl FnOnce() -> T) -> T {
 }
 
 pub fn init_logger() {
-    let filter_level = LevelFilter::Debug;
+    let filter_level = LevelFilter::Info;
 
     let logger = Logger {
         filter_level

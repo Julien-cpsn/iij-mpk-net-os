@@ -198,7 +198,7 @@ pub fn add_page_table_entry(virt_addr: VirtAddr) {
             },
             Err(FrameError::FrameNotPresent) => {
                 if t_index < 3 {
-                    let manual_vec = ManuallyDrop::new(avec![[{ Size4KiB::SIZE as usize }]|0; Size4KiB::SIZE as usize]);
+                    let manual_vec = ManuallyDrop::new(avec![[{ Size4KiB::SIZE as usize }]| 0; Size4KiB::SIZE as usize]);
 
                     let phys_addr = (&manual_vec).as_ptr() as u64 - physical_memory_offset.as_u64();
                     entry.unwrap().set_addr(PhysAddr::new(phys_addr), flags);

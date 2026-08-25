@@ -844,7 +844,6 @@ dependencies = [
 [[package]]
 name = "virtio-drivers"
 version = "0.13.0"
-source = "git+https://github.com/Julien-cpsn/virtio-drivers#37d8cf9365af6041e10028169fb1764c10cab4a6"
 dependencies = [
  "bitflags 2.13.0",
  "embedded-io",

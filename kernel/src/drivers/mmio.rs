@@ -23,7 +23,7 @@ impl accessor::Mapper for MemoryMapper {
         
         ktrace!("MAP phys to virt: {phys_base:#X} -> {virt_addr:#X}, {bytes} bytes");
 
-        add_flags_to_frame(VirtAddr::new(virt_addr as u64), PageTableFlags::USER_ACCESSIBLE, true);
+        add_flags_to_frame(VirtAddr::new(virt_addr as u64), PageTableFlags::WRITABLE | PageTableFlags::USER_ACCESSIBLE, true);
 
         NonZeroUsize::new(virt_addr).unwrap()
     }
